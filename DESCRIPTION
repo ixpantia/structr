@@ -18,7 +18,7 @@ Description: Provides a robust and efficient way to parse JSON data in R
     approach offers significant speed advantages over traditional R-based JSON
     parsing and validation, especially for large or complex JSON inputs.
 License: MIT + file LICENSE
-URL: https://github.com/ixpantia/structr
+URL: https://github.com/ixpantia/structr, https://ixpantia.github.io/structr/
 BugReports: https://github.com/ixpantia/structr/issues
 Depends:
     R (>= 4.2.0)
