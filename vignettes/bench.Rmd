@@ -1,5 +1,5 @@
 ---
-title: "JSON Parsing Performance Benchmark: structr vs jsonlite vs rjson vs RJSONIO"
+title: "JSON Parsing Performance Benchmark"
 output:
   html_document:
     toc: yes
@@ -61,6 +61,7 @@ This document benchmarks the performance of different R packages for parsing JSO
 2.  **`jsonlite`**: A widely used, robust JSON parser (implemented in C).
 3.  **`rjson`**: Another JSON parser (implemented in C).
 4.  **`RJSONIO`**: A versatile JSON parser, often used for interfacing with web APIs (implemented in C).
+5. **`RcppSimdJson`**: A high-performance JSON parser based on `simdjson`, which is known for its speed and efficiency (implemented in C++).
 
 The goal is to compare parsing speed across a wider range of JSON structures, from simple atomic values to large arrays and deeply nested objects.
 
@@ -500,3 +501,6 @@ if (nrow(all_medians) > 0) {
 ```
 
 # Conclusion
+
+`structr` competes well with every other JSON parsing library will the added benefit of schema validation during parsing.
+
