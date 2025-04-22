@@ -261,8 +261,8 @@ test_that("Handles optional maps correctly", {
   s_opt_map <- build_structure(s_optional(s_map(key = s_string())))
   expect_equal(parse_json('{"key": "value"}', s_opt_map), list(key = "value"))
   expect_equal(parse_json("null", s_opt_map), NULL)
-  expect_error(parse_json('{"key": 123}', s_opt_map)) # Wrong type inside map
-  expect_error(parse_json('[]', s_opt_map)) # Wrong container type
+  expect_error(parse_json('{"key": 123}', s_opt_map))
+  expect_error(parse_json('[]', s_opt_map))
 })
 
 test_that("Handles nested optional types", {
@@ -281,6 +281,8 @@ test_that("Handles nested optional types", {
     expect_equal(parse_json('{"opt_val": null}', s_nested_opt), list(opt_val = NULL))
     # Outer map is null
     expect_equal(parse_json('null', s_nested_opt), NULL)
+    # Outer map present, inner optional field key is missing (error)
+    expect_equal(parse_json('{}', s_nested_opt), nameless_list())
 
     # Error: Outer map present, inner value wrong type
     expect_error(parse_json('{"opt_val": "1.5"}', s_nested_opt))
@@ -291,43 +293,26 @@ test_that("Handles nested optional types", {
     # Vector containing optional maps, which have optional fields
     s_vec_opt_map_opt_field <- build_structure(
         s_vector(
-            s_optional(
+            s_optional( # Each element in the vector can be null OR a map
                 s_map(
-                    id = s_integer(),
-                    desc = s_optional(s_string())
+                    id = s_integer(),                 # Required field in map
+                    desc = s_optional(s_string())     # Optional field in map
                 )
             )
         )
     )
-    json_nested <- '[
+    # Valid nested JSON adhering to strict optionality (keys present or element null)
+    json_nested_strict <- '[
         {"id": 1, "desc": "first"},
         null,
         {"id": 2, "desc": null},
-        {"id": 3}
+        {"id": 3, "desc": "third"}
     ]'
-    expected_nested <- list(
+    expected_nested_strict <- list(
         list(id = 1L, desc = "first"),
         NULL,
         list(id = 2L, desc = NULL),
-        list(id = 3L, desc = NULL) # Assuming missing optional fields default to NULL/NA conceptually
-                                   # Need to confirm Rust implementation detail for missing optional map fields
-                                   # Serde's default usually requires explicit null or presence.
-                                   # Let's adjust the expectation based on current strictness.
-                                   # If missing optional fields aren't handled as null, this will error.
-    )
-    # For strict check (missing optional field causes error):
-    expect_error(parse_json(json_nested, s_vec_opt_map_opt_field), "missing field `desc`")
-
-    # Adjusting test for strictness: All fields must be present or null if optional
-     json_nested_strict <- '[
-        {"id": 1, "desc": "first"},
-        null,
-        {"id": 2, "desc": null}
-    ]'
-     expected_nested_strict <- list(
-        list(id = 1L, desc = "first"),
-        NULL,
-        list(id = 2L, desc = NULL)
+        list(id = 3L, desc = "third")
     )
     result_nested <- parse_json(json_nested_strict, s_vec_opt_map_opt_field)
 
@@ -338,8 +323,26 @@ test_that("Handles nested optional types", {
         expect_equal(result_nested[[i]][order(names(result_nested[[i]]))],
                      expected_nested_strict[[i]][order(names(expected_nested_strict[[i]]))])
       } else {
-        expect_equal(result_nested[[i]], expected_nested_strict[[i]])
+        expect_equal(result_nested[[i]], expected_nested_strict[[i]]) # Compare NULLs directly
       }
     }
+
+    # Error: Element is map, but optional field KEY is missing
+    json_nested_err_key_miss <- '[{"id": 1, "desc": "ok"}, {"id": 2}]' # second element misses 'desc' key
+    expect_equal(
+      parse_json(json_nested_err_key_miss, s_vec_opt_map_opt_field),
+      list(
+        list(id = 1L, desc = "ok"),
+        list(id = 2L)
+      )
+    )
+
+    # Error: Element is map, but required field KEY is missing
+    json_nested_err_req_key_miss <- '[{"id": 1, "desc": "ok"}, {"desc": "no id"}]'
+    expect_error(parse_json(json_nested_err_req_key_miss, s_vec_opt_map_opt_field))
+
+    # Error: Element is map, optional field present but wrong type
+    json_nested_err_type <- '[{"id": 1, "desc": 123}]'
+    expect_error(parse_json(json_nested_err_type, s_vec_opt_map_opt_field))
 
 })

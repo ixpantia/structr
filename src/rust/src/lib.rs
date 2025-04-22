@@ -358,7 +358,10 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
 
             for defined_name in *expected_fields_str {
                 if !r_map.contains_key(defined_name) {
-                    // TODO: Handle missing required fields
+                    if let Some(Structure::Optional(_)) = fields.get(*defined_name) {
+                        continue;
+                    }
+
                     return Err(de::Error::missing_field(defined_name));
                 }
             }
