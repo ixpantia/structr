@@ -1,6 +1,6 @@
 use extendr_api::{prelude::*, ToVectorValue};
 use hashbrown::{HashMap, HashSet};
-use serde::de::{self, DeserializeSeed, Deserializer, Expected, MapAccess, SeqAccess, Visitor};
+use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -143,13 +143,17 @@ impl<'de, 'a> DeserializeSeed<'de> for StructureSeed<'a> {
     }
 }
 
+const R_EPOCH: chrono::NaiveDate = match chrono::NaiveDate::from_ymd_opt(1970, 1, 1) {
+    Some(date) => date,
+    None => panic!("Failed to create R epoch date"),
+};
+
 fn parse_r_date(v: &str, format: &'static str) -> std::result::Result<f64, chrono::ParseError> {
     let date = chrono::NaiveDate::parse_from_str(v, format)?;
 
     // Convert chrono::NaiveDate to an integer counting days since
     // EPOCH
-    const EPOCH: chrono::NaiveDate = chrono::NaiveDate::from_ymd(1970, 1, 1);
-    Ok((date - EPOCH).num_days() as f64)
+    Ok((date - R_EPOCH).num_days() as f64)
 }
 
 // --- NEW: StructureVisitor ---
