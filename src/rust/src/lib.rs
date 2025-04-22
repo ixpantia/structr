@@ -1,6 +1,5 @@
 use extendr_api::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
-use serde_json;
 use std::collections::HashMap;
 // Keep serde_json for the Deserializer
 use std::convert::TryFrom;
@@ -21,6 +20,7 @@ enum Structure {
     Double,
     String,
     Logical,
+    Optional(Box<Structure>), // Optional type for nullable fields
 }
 
 #[extendr]
@@ -36,6 +36,11 @@ impl Structure {
             .ok_or_else(|| extendr_api::Error::Other("'type' element must be a string.".into()))?;
 
         match type_str {
+            "optional" => {
+                let val_robj = list.index("value")?;
+                let element_structure = Structure::convert_from_robj(val_robj)?;
+                Ok(Structure::Optional(Box::new(element_structure)))
+            }
             "string" => Ok(Structure::String),
             "integer" => Ok(Structure::Integer),
             "double" => Ok(Structure::Double),
@@ -104,7 +109,7 @@ struct StructureSeed<'a> {
 
 impl<'de, 'a> DeserializeSeed<'de> for StructureSeed<'a> {
     // The type that will be produced is an Robj
-    type Value = Robj;
+    type Value = Nullable<Robj>;
 
     fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
     where
@@ -123,6 +128,10 @@ impl<'de, 'a> DeserializeSeed<'de> for StructureSeed<'a> {
             Structure::Logical => deserializer.deserialize_bool(visitor),
             Structure::Vector(_) => deserializer.deserialize_seq(visitor),
             Structure::Map { .. } => deserializer.deserialize_map(visitor),
+            Structure::Optional(_) => {
+                // Handle optional types by allowing null values
+                deserializer.deserialize_option(visitor)
+            }
         }
     }
 }
@@ -142,25 +151,49 @@ fn expected_type_str(s: &Structure) -> &'static str {
         Structure::Logical => "a boolean (true/false)",
         Structure::Vector(_) => "an array/vector",
         Structure::Map { .. } => "an object/map",
+        Structure::Optional(_) => "an optional value (nullable)",
     }
 }
 
 impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     // The type we are creating
-    type Value = Robj;
+    type Value = Nullable<Robj>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}", expected_type_str(self.structure))
     }
 
-    // --- Visit Methods for Atomic Types ---
+    fn visit_some<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if let Structure::Optional(structure) = self.structure {
+            let visitor = StructureVisitor { structure };
+            // Allow null for optional types
+            deserializer.deserialize_any(visitor)
+        } else {
+            Err(de::Error::invalid_type(de::Unexpected::Option, &self))
+        }
+    }
+
+    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if let Structure::Optional(_) = self.structure {
+            // Allow null for optional types
+            Ok(Nullable::Null)
+        } else {
+            Err(de::Error::invalid_type(de::Unexpected::Option, &self))
+        }
+    }
 
     fn visit_bool<E>(self, v: bool) -> std::result::Result<Self::Value, E>
     where
         E: de::Error,
     {
         if *self.structure == Structure::Logical {
-            Ok(Robj::from(v))
+            Ok(NotNull(Robj::from(v)))
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Bool(v), &self))
         }
@@ -174,7 +207,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             Structure::Integer => {
                 // R integers are i32. Check for overflow.
                 if v >= i32::MIN as i64 && v <= i32::MAX as i64 {
-                    Ok(Robj::from(v as i32))
+                    Ok(NotNull(Robj::from(v as i32)))
                 } else {
                     Err(de::Error::invalid_value(
                         de::Unexpected::Signed(v),
@@ -184,7 +217,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             }
             Structure::Double => {
                 // Allow integer to be treated as double
-                Ok(Robj::from(v as f64))
+                Ok(NotNull(Robj::from(v as f64)))
             }
             _ => Err(de::Error::invalid_type(de::Unexpected::Signed(v), &self)),
         }
@@ -199,7 +232,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             Structure::Integer => {
                 if v <= i32::MAX as u64 {
                     // Check against i32 max
-                    Ok(Robj::from(v as i32))
+                    Ok(NotNull(Robj::from(v as i32)))
                 } else {
                     Err(de::Error::invalid_value(
                         de::Unexpected::Unsigned(v),
@@ -209,7 +242,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             }
             Structure::Double => {
                 // Allow integer to be treated as double
-                Ok(Robj::from(v as f64))
+                Ok(NotNull(Robj::from(v as f64)))
             }
             _ => Err(de::Error::invalid_type(de::Unexpected::Unsigned(v), &self)),
         }
@@ -223,7 +256,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             Structure::Integer => {
                 // Allow floats that are whole numbers if strict int required
                 if v.fract() == 0.0 && v >= i32::MIN as f64 && v <= i32::MAX as f64 {
-                    Ok(Robj::from(v as i32))
+                    Ok(NotNull(Robj::from(v as i32)))
                 } else {
                     Err(de::Error::invalid_value(
                         de::Unexpected::Float(v),
@@ -231,7 +264,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
                     ))
                 }
             }
-            Structure::Double => Ok(Robj::from(v)),
+            Structure::Double => Ok(NotNull(Robj::from(v))),
             _ => Err(de::Error::invalid_type(de::Unexpected::Float(v), &self)),
         }
     }
@@ -241,7 +274,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         E: de::Error,
     {
         if *self.structure == Structure::String {
-            Ok(Robj::from(v))
+            Ok(NotNull(Robj::from(v)))
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Str(v), &self))
         }
@@ -253,7 +286,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     {
         // Optimization: If it's a String, we can potentially avoid a copy
         if *self.structure == Structure::String {
-            Ok(Robj::from(v)) // Robj::from String might be slightly more efficient
+            Ok(NotNull(Robj::from(v))) // Robj::from String might be slightly more efficient
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Str(&v), &self))
         }
@@ -277,7 +310,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             }
             // Return as an R list. Coercing to atomic vector within Rust
             // is complex due to R's type system and NA handling. Let R handle coercion if needed.
-            Ok(List::from_values(values).into())
+            Ok(NotNull(List::from_values(values).into()))
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Seq, &self))
         }
@@ -294,7 +327,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         } = self.structure
         {
             let ignore_extra_fields = *ignore_extra_fields;
-            let mut r_map = HashMap::<&str, Robj>::new();
+            let mut r_map = HashMap::<&str, Nullable<Robj>>::new();
 
             // Process entries from the JSON map
             while let Some(key_str) = map.next_key::<&str>()? {
@@ -330,9 +363,9 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
                 }
             }
 
-            let r_list = List::from_hashmap(r_map);
+            let r_list = List::from_hashmap(r_map).expect("Failed to create R list");
 
-            Ok(r_list.into())
+            Ok(NotNull(r_list.into()))
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Map, &self))
         }
@@ -347,7 +380,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
 /// @ Rtype R_parse_json(json_string: String, structure: list) -> Robj
 /// @export
 #[extendr]
-fn parse_json_impl(json_string: &str, structure: &Structure) -> Result<Robj> {
+fn parse_json_impl(json_string: &str, structure: &Structure) -> Result<Nullable<Robj>> {
     // 2. Create a JSON deserializer from the input string slice
     // Use StrDeserializer for zero-copy reading from the string slice
     let mut deserializer = serde_json::Deserializer::from_str(json_string);

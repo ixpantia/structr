@@ -185,10 +185,161 @@ test_that("Handles duplicate keys in JSON object", {
   expect_error(parse_json(json_str, simple_map_struct))
 })
 
-# Optional: Add tests for ignore_extra_fields = TRUE if implemented
-# context("JSON Parsing - Ignore Extra Fields")
-# test_that("Ignores extra fields when requested", {
-#   struct_ignore <- build_structure(s_map(name = s_string(), .ignore_extra = TRUE)) # Hypothetical syntax
-#   json_extra <- '{"name": "test", "extra": 123}'
-#   expect_equal(parse_json(json_extra, struct_ignore), list(name = "test"))
-# })
+test_that("Handles optional atomic types correctly", {
+  # Optional string
+  s_opt_str <- build_structure(s_optional(s_string()))
+  expect_equal(parse_json("\"hello\"", s_opt_str), "hello")
+  expect_equal(parse_json("null", s_opt_str), NULL)
+  expect_error(parse_json("123", s_opt_str)) # Wrong type when present
+
+  # Optional integer
+  s_opt_int <- build_structure(s_optional(s_integer()))
+  expect_equal(parse_json("123", s_opt_int), 123L)
+  expect_equal(parse_json("null", s_opt_int), NULL)
+  expect_error(parse_json("\"123\"", s_opt_int)) # Wrong type when present
+  expect_error(parse_json("12.5", s_opt_int))   # Wrong type (float) when present
+
+  # Optional logical
+  s_opt_log <- build_structure(s_optional(s_logical()))
+  expect_equal(parse_json("true", s_opt_log), TRUE)
+  expect_equal(parse_json("null", s_opt_log), NULL)
+  expect_error(parse_json("\"true\"", s_opt_log)) # Wrong type when present
+})
+
+test_that("Handles optional fields within maps correctly", {
+  s_map_opt <- build_structure(s_map(
+    required_field = s_string(),
+    optional_field = s_optional(s_integer())
+  ))
+
+  # Both present
+  json1 <- '{"required_field": "abc", "optional_field": 10}'
+  expected1 <- list(required_field = "abc", optional_field = 10L)
+  result1 <- parse_json(json1, s_map_opt)
+  expect_equal(result1[order(names(result1))], expected1[order(names(expected1))])
+
+  # Optional field is null
+  json2 <- '{"required_field": "def", "optional_field": null}'
+  expected2 <- list(required_field = "def", optional_field = NULL)
+  result2 <- parse_json(json2, s_map_opt)
+  expect_equal(result2[order(names(result2))], expected2[order(names(expected2))])
+
+  # Error: Optional field present but wrong type
+  json3 <- '{"required_field": "ghi", "optional_field": "10"}'
+  expect_error(parse_json(json3, s_map_opt))
+
+  # Error: Required field is missing
+  json4 <- '{"optional_field": 10}'
+  expect_error(parse_json(json4, s_map_opt))
+
+  # Error: Required field is null (not allowed unless explicitly optional)
+  json5 <- '{"required_field": null, "optional_field": 10}'
+  s_map_req_not_opt <- build_structure(s_map(required_field = s_string()))
+  expect_error(parse_json('{"required_field": null}', s_map_req_not_opt))
+})
+
+test_that("Handles optional vectors correctly", {
+  # An optional vector (the whole vector can be null)
+  s_opt_vec <- build_structure(s_optional(s_vector(s_string())))
+  expect_equal(parse_json('["a", "b"]', s_opt_vec), list("a", "b"))
+  expect_equal(parse_json("null", s_opt_vec), NULL)
+  expect_error(parse_json('["a", 1]', s_opt_vec)) # Wrong element type when present
+  expect_error(parse_json('{"a": 1}', s_opt_vec)) # Wrong container type when present
+
+  # A vector containing optional elements (each element can be null)
+  s_vec_opt_el <- build_structure(s_vector(s_optional(s_integer())))
+  expect_equal(parse_json('[1, null, 3, null]', s_vec_opt_el), list(1L, NULL, 3L, NULL))
+  expect_equal(parse_json('[1, 2, 3]', s_vec_opt_el), list(1L, 2L, 3L))
+  expect_equal(parse_json('[null, null]', s_vec_opt_el), list(NULL, NULL))
+  expect_equal(parse_json('[]', s_vec_opt_el), list())
+  expect_error(parse_json('[1, "a", 3]', s_vec_opt_el)) # Wrong element type when present
+})
+
+
+test_that("Handles optional maps correctly", {
+  # An optional map (the whole map can be null)
+  s_opt_map <- build_structure(s_optional(s_map(key = s_string())))
+  expect_equal(parse_json('{"key": "value"}', s_opt_map), list(key = "value"))
+  expect_equal(parse_json("null", s_opt_map), NULL)
+  expect_error(parse_json('{"key": 123}', s_opt_map)) # Wrong type inside map
+  expect_error(parse_json('[]', s_opt_map)) # Wrong container type
+})
+
+test_that("Handles nested optional types", {
+    # Optional map containing an optional field
+    s_nested_opt <- build_structure(
+        s_optional(
+            s_map(
+                opt_val = s_optional(s_double())
+            )
+        )
+    )
+
+    # Outer map is present, inner value is present
+    expect_equal(parse_json('{"opt_val": 1.5}', s_nested_opt), list(opt_val = 1.5))
+    # Outer map is present, inner value is null
+    expect_equal(parse_json('{"opt_val": null}', s_nested_opt), list(opt_val = NULL))
+    # Outer map is null
+    expect_equal(parse_json('null', s_nested_opt), NULL)
+
+    # Error: Outer map present, inner value wrong type
+    expect_error(parse_json('{"opt_val": "1.5"}', s_nested_opt))
+    # Error: Outer map wrong type
+    expect_error(parse_json('[]', s_nested_opt))
+
+
+    # Vector containing optional maps, which have optional fields
+    s_vec_opt_map_opt_field <- build_structure(
+        s_vector(
+            s_optional(
+                s_map(
+                    id = s_integer(),
+                    desc = s_optional(s_string())
+                )
+            )
+        )
+    )
+    json_nested <- '[
+        {"id": 1, "desc": "first"},
+        null,
+        {"id": 2, "desc": null},
+        {"id": 3}
+    ]'
+    expected_nested <- list(
+        list(id = 1L, desc = "first"),
+        NULL,
+        list(id = 2L, desc = NULL),
+        list(id = 3L, desc = NULL) # Assuming missing optional fields default to NULL/NA conceptually
+                                   # Need to confirm Rust implementation detail for missing optional map fields
+                                   # Serde's default usually requires explicit null or presence.
+                                   # Let's adjust the expectation based on current strictness.
+                                   # If missing optional fields aren't handled as null, this will error.
+    )
+    # For strict check (missing optional field causes error):
+    expect_error(parse_json(json_nested, s_vec_opt_map_opt_field), "missing field `desc`")
+
+    # Adjusting test for strictness: All fields must be present or null if optional
+     json_nested_strict <- '[
+        {"id": 1, "desc": "first"},
+        null,
+        {"id": 2, "desc": null}
+    ]'
+     expected_nested_strict <- list(
+        list(id = 1L, desc = "first"),
+        NULL,
+        list(id = 2L, desc = NULL)
+    )
+    result_nested <- parse_json(json_nested_strict, s_vec_opt_map_opt_field)
+
+    # Compare element-wise after sorting map keys within each element
+    expect_equal(length(result_nested), length(expected_nested_strict))
+    for(i in seq_along(result_nested)) {
+      if(is.list(result_nested[[i]])) {
+        expect_equal(result_nested[[i]][order(names(result_nested[[i]]))],
+                     expected_nested_strict[[i]][order(names(expected_nested_strict[[i]]))])
+      } else {
+        expect_equal(result_nested[[i]], expected_nested_strict[[i]])
+      }
+    }
+
+})

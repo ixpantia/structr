@@ -178,6 +178,76 @@ s_map <- function(..., .ignore_extra_fields = FALSE) {
   )
 }
 
+#' Define an Optional (Nullable) Structure
+#'
+#' Creates an intermediate definition indicating that a JSON value can either conform
+#' to the specified `structure_definition` or be JSON `null`. This is typically
+#' used within `s_map()` to define fields that are not required to have a non-null
+#' value.
+#'
+#' @param structure_definition The structure definition that the JSON value should conform
+#'   to if it is *not* `null`. This should be the result of another `s_*` function
+#'   call (e.g., `s_integer()`, `s_string()`, `s_map(...)`).
+#'
+#' @return An intermediate list representing the optional structure definition.
+#' @export
+#' @examples
+#' # Define a map where 'description' is optional (can be string or null)
+#' map_with_optional <- s_map(
+#'   id = s_integer(),
+#'   description = s_optional(s_string())
+#' )
+#' built_optional <- build_structure(map_with_optional)
+#' str(built_optional)
+#' # Expected (simplified):
+#' # list(type = "map",
+#' #      value = list(id = list(type = "integer"),
+#' #                   description = list(type = "optional",
+#' #                                      value = list(type = "string"))),
+#' #      ...)
+#'
+#' # Define a vector where elements can be integers or null
+#' vec_optional_elements <- s_vector(s_optional(s_integer()))
+#' build_structure(vec_optional_elements)
+#' # Expected (simplified):
+#' # list(type = "vector",
+#' #      value = list(type = "optional", value = list(type = "integer")))
+#'
+#' # --- Parsing Examples (see ?parse_json) ---
+#'
+#' # Field present and valid
+#' json_present <- '{"id": 1, "description": "A product"}'
+#' parse_json(json_present, built_optional)
+#' # Output: list(id = 1L, description = "A product")
+#'
+#' # Optional field is null
+#' json_null <- '{"id": 2, "description": null}'
+#' parse_json(json_null, built_optional)
+#' # Output: list(id = 2L, description = NULL)
+#'
+#' # Optional field is missing (this causes an error by default with maps)
+#' # Note: Optionality here means "can be null", not "can be absent".
+#' # The 'missing field' error takes precedence unless the field is truly absent
+#' # from the structure definition itself (which isn't the case here).
+#' json_missing <- '{"id": 3}'
+#' try(parse_json(json_missing, built_optional))
+#' # Expected: Error about missing field "description"
+#'
+#' # Parsing a vector with optional elements
+#' json_vec_opt <- '[10, null, 30, null]'
+#' parse_json(json_vec_opt, build_structure(vec_optional_elements))
+#' # Output: list(10L, NULL, 30L, NULL)
+s_optional <- function(structure_definition) {
+  # Basic validation
+  if (missing(structure_definition) || !is.list(structure_definition) || is.null(structure_definition$type)) {
+      stop("`structure_definition` must be a valid structure definition from an `s_*` function.", call. = FALSE)
+  }
+  list(type = "optional", value = structure_definition)
+}
+s_optional <- function(x) {
+  list(type = "optional", value = x)
+}
+
 #' Finalize and Validate a Structure Definition
 #'
 #' Processes a structure definition created using the `s_*` helper functions
