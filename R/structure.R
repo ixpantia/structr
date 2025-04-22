@@ -78,8 +78,15 @@ s_logical <- function() {
 s_vector <- function(element_structure) {
   # Input validation for element_structure could be added here,
   # but build_structure handles the final validation.
-  if (missing(element_structure) || !is.list(element_structure) || is.null(element_structure$type)) {
-      stop("`element_structure` must be a valid structure definition from an `s_*` function.", call. = FALSE)
+  if (
+    missing(element_structure) ||
+      !is.list(element_structure) ||
+      is.null(element_structure$type)
+  ) {
+    stop(
+      "`element_structure` must be a valid structure definition from an `s_*` function.",
+      call. = FALSE
+    )
   }
   # Store the user's definition directly; build_structure will process it recursively.
   list(type = "vector", value = element_structure)
@@ -153,28 +160,38 @@ s_map <- function(..., .ignore_extra_fields = FALSE) {
   # and that field names are unique.
   nms <- names(map_fields)
   is_named_or_empty <- length(map_fields) == 0 ||
-                       (!is.null(nms) && all(nzchar(nms)) && !anyDuplicated(nms))
+    (!is.null(nms) && all(nzchar(nms)) && !anyDuplicated(nms))
 
   if (!is_named_or_empty) {
-     stop("All arguments passed to `s_map` via `...` must be uniquely named.", call. = FALSE)
+    stop(
+      "All arguments passed to `s_map` via `...` must be uniquely named.",
+      call. = FALSE
+    )
   }
 
   # Basic validation for field values (must be lists from s_*). Deeper validation
   # happens in build_structure.
   is_valid_structure <- function(x) is.list(x) && !is.null(x$type)
   if (length(map_fields) > 0 && !all(sapply(map_fields, is_valid_structure))) {
-      stop("All values passed to `s_map` via `...` must be valid structure definitions from `s_*` functions.", call. = FALSE)
+    stop(
+      "All values passed to `s_map` via `...` must be valid structure definitions from `s_*` functions.",
+      call. = FALSE
+    )
   }
 
-  if (!is.logical(.ignore_extra_fields) || length(.ignore_extra_fields) != 1 || is.na(.ignore_extra_fields)) {
-      stop("`.ignore_extra_fields` must be TRUE or FALSE.", call. = FALSE)
+  if (
+    !is.logical(.ignore_extra_fields) ||
+      length(.ignore_extra_fields) != 1 ||
+      is.na(.ignore_extra_fields)
+  ) {
+    stop("`.ignore_extra_fields` must be TRUE or FALSE.", call. = FALSE)
   }
 
   # Return the intermediate structure specification
   list(
-      type = "map",
-      value = map_fields,
-      ignore_extra_fields = .ignore_extra_fields # Store the flag
+    type = "map",
+    value = map_fields,
+    ignore_extra_fields = .ignore_extra_fields # Store the flag
   )
 }
 
@@ -239,8 +256,15 @@ s_map <- function(..., .ignore_extra_fields = FALSE) {
 #' # Output: list(10L, NULL, 30L, NULL)
 s_optional <- function(structure_definition) {
   # Basic validation
-  if (missing(structure_definition) || !is.list(structure_definition) || is.null(structure_definition$type)) {
-      stop("`structure_definition` must be a valid structure definition from an `s_*` function.", call. = FALSE)
+  if (
+    missing(structure_definition) ||
+      !is.list(structure_definition) ||
+      is.null(structure_definition$type)
+  ) {
+    stop(
+      "`structure_definition` must be a valid structure definition from an `s_*` function.",
+      call. = FALSE
+    )
   }
   list(type = "optional", value = structure_definition)
 }
@@ -331,7 +355,6 @@ s_optional <- function(x) {
 #' print(parsed_data)
 #'
 build_structure <- function(x) {
-
   # Call the internal function (which might be Rust or R based on implementation)
   # to perform the conversion and validation.
   result <- Structure$convert_from_robj(x)

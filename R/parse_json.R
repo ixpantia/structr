@@ -119,7 +119,6 @@
 #' try(parse_json(duplicate_key_json, user_structure))
 #' # Expected: Error indicating duplicate key "username"
 parse_json <- function(json_string, structure) {
-
   # Call the Rust implementation function (via the wrapper)
   result <- parse_json_impl(json_string, structure)
 
