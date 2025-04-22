@@ -375,13 +375,6 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     }
 }
 
-/// Parses a JSON string according to a provided structure definition using streaming.
-///
-/// @param json_string A character string containing the JSON data.
-/// @param structure An R list object representing the structure, created by `build_structure()`.
-/// @return An R object (list, vector, atomic) representing the parsed JSON if validation succeeds.
-/// @ Rtype R_parse_json(json_string: String, structure: list) -> Robj
-/// @export
 #[extendr]
 fn parse_json_impl(json_string: &str, structure: &Structure) -> Result<Nullable<Robj>> {
     // 2. Create a JSON deserializer from the input string slice

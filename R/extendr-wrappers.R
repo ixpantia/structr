@@ -10,13 +10,6 @@
 #' @useDynLib structr, .registration = TRUE
 NULL
 
-#' Parses a JSON string according to a provided structure definition using streaming.
-#'
-#' @param json_string A character string containing the JSON data.
-#' @param structure An R list object representing the structure, created by `build_structure()`.
-#' @return An R object (list, vector, atomic) representing the parsed JSON if validation succeeds.
-#' @ Rtype R_parse_json(json_string: String, structure: list) -> Robj
-#' @export
 parse_json_impl <- function(json_string, structure) .Call(wrap__parse_json_impl, json_string, structure)
 
 Structure <- new.env(parent = emptyenv())

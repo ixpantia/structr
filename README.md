@@ -14,6 +14,18 @@ The core parsing and validation logic is implemented in Rust using the highly pe
 *   **Detailed Errors:** Provides informative error messages pinpointing the location and nature of validation failures (e.g., type mismatch, missing field, invalid syntax, integer overflow).
 *   **Optional Types:** Supports JSON `null` values for fields defined using `s_optional()`.
 
+## Features
+
+- [x] Define JSON schemas using R functions
+- [x] Validate JSON data against the defined schema
+- [x] Parse JSON data into R objects
+- [x] Support for nested structures and arrays
+- [x] Detailed error messages for validation failures
+- [x] Support for optional fields (nullable)
+- [ ] Support for serializing R objects back to JSON (planned for future versions)
+- [ ] Support for custom validation functions (planned for future versions)
+- [ ] Support for more complex data types (e.g., dates, enums)
+
 ## Installation
 
 ### Prerequisites: Rust Toolchain
