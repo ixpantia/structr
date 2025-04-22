@@ -268,9 +268,6 @@ s_optional <- function(structure_definition) {
   }
   list(type = "optional", value = structure_definition)
 }
-s_optional <- function(x) {
-  list(type = "optional", value = x)
-}
 
 #' Finalize and Validate a Structure Definition
 #'

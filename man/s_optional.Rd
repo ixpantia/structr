@@ -4,7 +4,7 @@
 \alias{s_optional}
 \title{Define an Optional (Nullable) Structure}
 \usage{
-s_optional(x)
+s_optional(structure_definition)
 }
 \arguments{
 \item{structure_definition}{The structure definition that the JSON value should conform
