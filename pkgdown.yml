@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   bench: bench.html
   getting_started: getting_started.html
-last_built: 2025-04-22T21:15Z
+last_built: 2025-04-22T21:20Z
 urls:
   reference: https://ixpantia.github.io/structr/reference
   article: https://ixpantia.github.io/structr/articles
