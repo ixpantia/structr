@@ -1,22 +1,37 @@
 Package: structr
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Title: Strictly Typed JSON Parsing and Validation
+Version: 0.1.0.9000
+Authors@R: c(
+    person("ixpantia, SRL", , , "hola@ixpantia.com", role = "cph"),
+    person("Andres", "Quintero", , "andres@ixpantia.com", role = c("aut", "cre")),
+    person("The authors of the dependency Rust crates", role = "ctb",
+           comment = "see inst/AUTHORS file for details")
+  )
+Maintainer: Andres Quintero <andres@ixpantia.com>
+Description: Provides a robust and efficient way to parse JSON data in R
+    while strictly validating it against a user-defined schema. It ensures
+    that incoming JSON data not only conforms to expected structures (objects,
+    arrays, nesting) but also adheres to specific data types (integer, double,
+    string, logical, optional/nullable). The core parsing and validation logic
+    is implemented in Rust using the highly performant 'serde' and 'simd_json'
+    crates, accessed seamlessly from R via the '{extendr}' framework. This
+    approach offers significant speed advantages over traditional R-based JSON
+    parsing and validation, especially for large or complex JSON inputs.
+License: MIT + file LICENSE
+URL: https://github.com/ixpantia/structr
+BugReports: https://github.com/ixpantia/structr/issues
+Depends:
+    R (>= 4.2.0)
+Imports:
+    methods,
+    rlang
+Suggests: 
+    testthat (>= 3.0.0)
+Config/rextendr/version: 0.3.1.9001
+Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Config/rextendr/version: 0.3.1.9001
-SystemRequirements: Cargo (Rust's package manager), rustc
-Depends: 
-    R (>= 4.2)
-Suggests: 
-    knitr,
-    rmarkdown,
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
-VignetteBuilder: knitr
+SystemRequirements: Cargo (Rust's package manager) >= 1.70, rustc >= 1.70
+Config/Needs/website: rmarkdown
+NeedsCompilation: yes

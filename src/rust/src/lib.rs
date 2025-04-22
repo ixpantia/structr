@@ -1,7 +1,6 @@
 use extendr_api::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use std::collections::HashMap;
-// Keep serde_json for the Deserializer
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -173,6 +172,18 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             deserializer.deserialize_any(visitor)
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Option, &self))
+        }
+    }
+
+    fn visit_unit<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if let Structure::Optional(_) = self.structure {
+            // Allow null for optional types
+            Ok(Nullable::Null)
+        } else {
+            Err(de::Error::invalid_type(de::Unexpected::Unit, &self))
         }
     }
 
@@ -376,24 +387,16 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
 }
 
 #[extendr]
-fn parse_json_impl(json_string: &str, structure: &Structure) -> Result<Nullable<Robj>> {
-    // 2. Create a JSON deserializer from the input string slice
-    // Use StrDeserializer for zero-copy reading from the string slice
-    let mut deserializer = serde_json::Deserializer::from_str(json_string);
+fn parse_json_impl(json_string: String, structure: &Structure) -> Result<Nullable<Robj>> {
+    let mut byte_data = json_string.into_bytes();
 
-    // 3. Create the top-level seed
+    let mut deserializer = simd_json::Deserializer::from_slice(&mut byte_data)
+        .map_err(|e| extendr_api::Error::Other(e.to_string()))?;
+
     let seed = StructureSeed { structure };
 
-    // 4. Deserialize using the seed
-    // Map the serde error to an extendr error for R
     seed.deserialize(&mut deserializer)
         .map_err(|e| extendr_api::Error::Other(e.to_string()))
-
-    // Optional: Check if there is any trailing data after the main JSON value
-    // .and_then(|result| {
-    //     deserializer.end().map_err(|e| extendr_api::Error::Other(format!("Trailing data after JSON: {}", e)))?;
-    //     Ok(result)
-    // })
 }
 
 // Macro to generate exports.

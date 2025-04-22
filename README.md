@@ -4,13 +4,13 @@
 
 `structr` provides a robust and efficient way to parse JSON data in R while strictly validating it against a user-defined schema. It ensures that incoming JSON data not only conforms to expected structures (objects, arrays, nesting) but also adheres to specific data types (integer, double, string, logical, optional/nullable).
 
-The core parsing and validation logic is implemented in Rust using the highly performant `serde` and `serde_json` crates, accessed seamlessly from R via the `{extendr}` framework. This approach offers significant speed advantages over traditional R-based JSON parsing and validation, especially for large or complex JSON inputs.
+The core parsing and validation logic is implemented in Rust using the highly performant `serde` and `simd_json` crates, accessed seamlessly from R via the `{extendr}` framework. This approach offers significant speed advantages over traditional R-based JSON parsing and validation, especially for large or complex JSON inputs.
 
 **Key Features:**
 
 *   **Schema Definition:** Define expected JSON structures using intuitive R functions (`s_map`, `s_vector`, `s_integer`, `s_double`, `s_string`, `s_logical`, `s_optional`).
 *   **Strict Validation:** Ensures type correctness, presence of required fields, absence of disallowed extra fields (by default), and correct nesting.
-*   **Performance:** Leverages Rust and `serde_json` for fast streaming parsing and validation.
+*   **Performance:** Leverages Rust and `simd_json` for fast streaming parsing and validation.
 *   **Detailed Errors:** Provides informative error messages pinpointing the location and nature of validation failures (e.g., type mismatch, missing field, invalid syntax, integer overflow).
 *   **Optional Types:** Supports JSON `null` values for fields defined using `s_optional()`.
 
@@ -52,7 +52,7 @@ Once the Rust toolchain is set up, you can install `structr`.
 ```r
 # Currently under development, install from GitHub (replace with actual path if needed):
 # install.packages("remotes") # If you don't have remotes installed
-remotes::install_github("andyquinterom/structr") # Replace with the correct repo path
+remotes::install_github("ixpantia/structr") # Replace with the correct repo path
 
 # Once on CRAN:
 # install.packages("structr")
@@ -226,4 +226,4 @@ This package is licensed under the MIT License. <!-- Adjust if using GPL3 or oth
 
 ## Author
 
-First Last <first.last@example.com> (ORCID: YOUR-ORCID-ID)
+Andres Quintero <andres@ixpantia.com>

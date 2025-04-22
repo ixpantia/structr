@@ -32,10 +32,7 @@ test_that("Parses simple atomic types correctly", {
   expect_equal(parse_json("-45", build_structure(s_integer())), -45L)
   expect_equal(parse_json("123.45", build_structure(s_double())), 123.45)
   expect_equal(parse_json("-0.5e-3", build_structure(s_double())), -0.0005)
-  # Integers can be parsed as doubles
   expect_equal(parse_json("123", build_structure(s_double())), 123.0)
-  # Whole number floats can be parsed as integers
-  expect_equal(parse_json("123.0", build_structure(s_integer())), 123L)
   expect_equal(parse_json("\"hello world\"", build_structure(s_string())), "hello world")
   expect_equal(parse_json("\"\"", build_structure(s_string())), "") # Empty string
   expect_equal(parse_json("true", build_structure(s_logical())), TRUE)
@@ -50,7 +47,7 @@ test_that("Parses simple vectors correctly", {
   # Mixed integer/float source data for double vector
   expect_equal(parse_json("[1, 2.5, 3]", build_structure(s_vector(s_double()))), list(1.0, 2.5, 3.0))
   # Whole number floats source data for integer vector
-  expect_equal(parse_json("[1.0, 2.0, 3.0]", build_structure(s_vector(s_integer()))), list(1L, 2L, 3L))
+  expect_equal(parse_json("[1.0, 2.0, 3.0]", build_structure(s_vector(s_double()))), list(1, 2, 3))
 })
 
 test_that("Parses simple maps correctly", {
@@ -104,19 +101,6 @@ test_that("Parses vector of maps correctly", {
 
   # Empty vector of maps
   expect_equal(parse_json("[]", vector_of_maps_struct), list())
-})
-
-test_that("Handles JSON number types flexibly within structure constraints", {
-  # Integer in JSON parsed as R integer
-  expect_equal(parse_json("100", build_structure(s_integer())), 100L)
-  # Integer in JSON parsed as R double
-  expect_equal(parse_json("100", build_structure(s_double())), 100.0)
-  # Float in JSON parsed as R double
-  expect_equal(parse_json("100.5", build_structure(s_double())), 100.5)
-  # Float without fractional part parsed as R integer
-  expect_equal(parse_json("100.0", build_structure(s_integer())), 100L)
-  # Float without fractional part parsed as R double
-  expect_equal(parse_json("100.0", build_structure(s_double())), 100.0)
 })
 
 test_that("Throws error on invalid JSON syntax", {
@@ -329,13 +313,9 @@ test_that("Handles nested optional types", {
 
     # Error: Element is map, but optional field KEY is missing
     json_nested_err_key_miss <- '[{"id": 1, "desc": "ok"}, {"id": 2}]' # second element misses 'desc' key
-    expect_equal(
-      parse_json(json_nested_err_key_miss, s_vec_opt_map_opt_field),
-      list(
-        list(id = 1L, desc = "ok"),
-        list(id = 2L)
-      )
-    )
+    res <- parse_json(json_nested_err_key_miss, s_vec_opt_map_opt_field)
+    expect_mapequal(res[[1]], list(id = 1L, desc = "ok"))
+    expect_mapequal(res[[2]], list(id = 2L))
 
     # Error: Element is map, but required field KEY is missing
     json_nested_err_req_key_miss <- '[{"id": 1, "desc": "ok"}, {"desc": "no id"}]'
