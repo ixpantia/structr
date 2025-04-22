@@ -1,0 +1,491 @@
+---
+title: "JSON Parsing Performance Benchmark: structr vs jsonlite vs rjson vs RJSONIO"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    theme: united
+    df_print: kable # Nicer table printing
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Performance Benchmarks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+
+# Ensure required packages are installed and loaded
+required_pkgs <- c("structr", "jsonlite", "rjson", "RJSONIO", "microbenchmark", "ggplot2", "dplyr")
+missing_pkgs <- required_pkgs[!sapply(required_pkgs, requireNamespace, quietly = TRUE)]
+if (length(missing_pkgs) > 0) {
+  # In a real vignette build, you might want to stop or conditionally skip
+  # For interactive use, message is fine:
+  message("Please install the following packages for the full benchmark: ", paste(missing_pkgs, collapse = ", "))
+  # Attempt to load anyway, microbenchmark might fail later if pkgs missing
+}
+
+# Load libraries if available
+library(structr)
+library(jsonlite)
+library(rjson)
+library(RJSONIO)
+library(microbenchmark)
+library(ggplot2)
+library(dplyr)
+
+# Custom ggplot theme for consistency
+theme_set(theme_bw() + theme(legend.position = "top"))
+
+# Helper to check equality, handling potential NULLs from safe benchmark run
+print_and_plot <- function(bm_result, title, y_label) {
+  if (!is.null(bm_result)) {
+    print(bm_result)
+    autoplot(bm_result) +
+      scale_y_log10(labels = scales::comma) + # Use comma for large numbers
+      labs(title = title, y = y_label)
+  } else {
+    message("Benchmark result is NULL, skipping print/plot.")
+  }
+}
+```
+
+# Introduction
+
+This document benchmarks the performance of different R packages for parsing JSON strings into R objects. We compare:
+
+1.  **`structr`**: Parses JSON *and* simultaneously validates it against a predefined schema (implemented in Rust using `serde` and `simd-json`).
+2.  **`jsonlite`**: A widely used, robust JSON parser (implemented in C).
+3.  **`rjson`**: Another JSON parser (implemented in C).
+4.  **`RJSONIO`**: A versatile JSON parser, often used for interfacing with web APIs (implemented in C).
+
+The goal is to compare parsing speed across a wider range of JSON structures, from simple atomic values to large arrays and deeply nested objects.
+
+# Benchmark Setup
+
+We will test several scenarios representing common and challenging JSON structures. For `structr`, we pre-build the required structure definitions outside the timed benchmark loop, reflecting typical usage (define the structure once, parse many times).
+
+## Disclaimer
+
+If you are reading this vignette on GitHub Pages, the benchmarks ran in GitHub Actions.
+The results will differ every time they run depending on many factors. If you want
+a true realistic benchmark, run the code in your own environment.
+
+## JSON Data and `structr` Schemas
+
+The schemas and JSON objects are defined in the source code of this document.
+Since the values can be long, they are hidden from the final output, however,
+they are fully available in the source code.
+
+```{r define_data_schemas, echo=FALSE}
+# --- Scenario 1: Simple Flat Object ---
+json_simple_object <- '{"id": 123, "name": "Example Item", "value": 99.95, "active": true}'
+structr_simple_object <- build_structure(s_map(
+  id = s_integer(),
+  name = s_string(),
+  value = s_double(),
+  active = s_logical()
+))
+
+# --- Scenario 2: Simple Array (Integers, 50 items) ---
+n_simple_int <- 50
+json_simple_array_int <- paste0("[", paste(1:n_simple_int, collapse = ","), "]")
+structr_simple_array_int <- build_structure(s_vector(s_integer()))
+
+# --- Scenario 3: Simple Array (Strings, 26 items) ---
+json_simple_array_str <- paste0("[", paste0("\"", letters, "\"", collapse = ","), "]")
+structr_simple_array_str <- build_structure(s_vector(s_string()))
+
+# --- Scenario 4: Nested Object ---
+json_nested_object <- '{
+  "orderId": "ORD-001",
+  "customer": {
+    "name": "Alice", "email": "alice@example.com", "prefs": {"newsletter": true, "theme": "dark"},
+    "addresses": [
+      {"type": "home", "street": "123 Main St", "city": "Anytown", "zip": "12345"},
+      {"type": "work", "street": "456 Oak Ave", "city": "Otherville", "zip": "67890"}
+    ]
+  },
+  "items": [
+    {"sku": "A1", "qty": 2, "price": 10.50, "options": null},
+    {"sku": "B2", "qty": 1, "price": 25.00, "options": ["giftwrap"]}
+  ],
+  "total": 46.00,
+  "notes": null
+}'
+structr_nested_object <- build_structure(s_map(
+  orderId = s_string(),
+  customer = s_map(
+    name = s_string(),
+    email = s_string(),
+    prefs = s_map(newsletter = s_logical(), theme = s_string()),
+    addresses = s_vector(
+      s_map(type = s_string(), street = s_string(), city = s_string(), zip = s_string())
+    )
+  ),
+  items = s_vector(
+    s_map(
+      sku = s_string(),
+      qty = s_integer(),
+      price = s_double(),
+      options = s_optional(s_vector(s_string())) # Optional array of strings
+    )
+  ),
+  total = s_double(),
+  notes = s_optional(s_string()) # Optional string
+))
+
+# --- Scenario 5: Array of Simple Objects (100 Objects) ---
+n_array_obj <- 100
+generate_obj_json <- function(i) {
+  sprintf(
+    '{"id": %d, "label": "Item_%s", "value": %.2f, "active": %s}',
+    i, sample(letters, 1), runif(1) * 100, sample(c("true", "false"), 1)
+  )
+}
+obj_list <- sapply(1:n_array_obj, generate_obj_json)
+json_array_of_objects <- paste0("[", paste(obj_list, collapse = ",\n"), "]")
+
+structr_array_of_objects <- build_structure(
+  s_vector(
+    s_map(
+      id = s_integer(),
+      label = s_string(),
+      value = s_double(),
+      active = s_logical()
+    )
+  )
+)
+
+# --- Scenario 6: Large Array of Simple Objects (1000 Objects) ---
+n_large_array_obj <- 1000
+obj_list_large <- sapply(1:n_large_array_obj, generate_obj_json)
+json_large_array_of_objects <- paste0("[", paste(obj_list_large, collapse = ",\n"), "]")
+# Use the same structr definition as Scenario 5
+structr_large_array_of_objects <- structr_array_of_objects
+
+# --- Scenario 7: Large Integer Array (10,000 items) ---
+n_large_int <- 10000
+json_large_array_int <- paste0("[", paste(1:n_large_int, collapse = ","), "]")
+structr_large_array_int <- build_structure(s_vector(s_integer()))
+
+# --- Scenario 8: Large String Array (10,000 items) ---
+n_large_str <- 10000
+# Generate relatively short strings efficiently
+large_strings <- sprintf("Str_%d", 1:n_large_str)
+json_large_array_str <- paste0("[", paste0("\"", large_strings, "\"", collapse = ","), "]")
+structr_large_array_str <- build_structure(s_vector(s_string()))
+
+# --- Scenario 9: Deeply Nested Object (10 levels) ---
+depth <- 10
+build_deep_json <- function(level) {
+  if (level <= 0) {
+    return('"final_value"')
+  }
+  paste0('{"level', level, '": ', build_deep_json(level - 1), "}")
+}
+json_deep_nest <- build_deep_json(depth)
+
+build_deep_schema <- function(level) {
+  if (level <= 0) {
+    return(s_string())
+  }
+  # Create list dynamically for s_map call
+  field_list <- list()
+  field_list[[paste0("level", level)]] <- build_deep_schema(level - 1)
+  do.call(s_map, field_list)
+}
+structr_deep_nest <- build_structure(build_deep_schema(depth))
+
+
+# --- Scenario 10: Wide Object (100 fields) ---
+n_fields <- 100
+wide_fields_json <- sapply(1:n_fields, function(i) {
+  key <- paste0("field_", i)
+  val <- switch(i %% 4 + 1,
+    i, # integer
+    sprintf('"val_%d"', i), # string
+    runif(1, 0, 100), # double
+    sample(c("true", "false"), 1)
+  ) # logical
+  paste0('"', key, '": ', val)
+})
+json_wide_object <- paste0("{", paste(wide_fields_json, collapse = ",\n"), "}")
+
+wide_fields_schema_list <- lapply(1:n_fields, function(i) {
+  switch(i %% 4 + 1,
+    s_integer(),
+    s_string(),
+    s_double(),
+    s_logical()
+  )
+})
+names(wide_fields_schema_list) <- paste0("field_", 1:n_fields)
+structr_wide_object <- build_structure(do.call(s_map, wide_fields_schema_list))
+```
+
+## Benchmarking Parameters
+
+```{r params}
+# Number of times to run each benchmark expression
+# Adjust down for slower scenarios if needed
+benchmark_times_fast <- 1000
+benchmark_times_medium <- 500
+benchmark_times_slow <- 100
+
+# Unit for reporting timings
+benchmark_unit_fast <- "us" # microseconds
+benchmark_unit_medium <- "ms" # milliseconds
+benchmark_unit_slow <- "ms" # milliseconds
+```
+
+# Benchmark Results
+
+We now run the benchmarks for each scenario. The plots show the distribution of execution times (lower is better). Note the Y-axis is often on a logarithmic scale due to potentially large performance differences. We use `check = "equal"` or wrap `fromJSON` calls in `try()` for complex cases where strict equality might fail due to floating point differences or minor structural variations between parsers, focusing instead on raw speed.
+
+## Scenario 1: Simple Flat Object
+
+```{r bm_simple_object, echo=TRUE}
+bm_simple_object <- microbenchmark(
+  structr = structr::parse_json(json_simple_object, structr_simple_object),
+  jsonlite = jsonlite::fromJSON(json_simple_object, simplifyDataFrame = FALSE),
+  rjson = rjson::fromJSON(json_simple_object),
+  RJSONIO = RJSONIO::fromJSON(json_simple_object, simplify = FALSE),
+  times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
+)
+print_and_plot(bm_simple_object,
+  title = "Scenario 1: Simple Flat Object Parsing Time",
+  y_label = paste("Time (", benchmark_unit_fast, ", log scale)")
+)
+```
+
+## Scenario 2: Simple Array (Integers, 50 items)
+
+```{r bm_simple_array_int, echo=TRUE}
+bm_simple_array_int <- microbenchmark(
+  structr = structr::parse_json(json_simple_array_int, structr_simple_array_int),
+  jsonlite = jsonlite::fromJSON(json_simple_array_int), # simplify = TRUE default good here
+  rjson = rjson::fromJSON(json_simple_array_int),
+  RJSONIO = RJSONIO::fromJSON(json_simple_array_int), # simplify = TRUE default good here
+  times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
+)
+
+print_and_plot(bm_simple_array_int,
+  title = "Scenario 2: Simple Array (Integers) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_fast, ", log scale)")
+)
+```
+
+## Scenario 3: Simple Array (Strings, 26 items)
+
+```{r bm_simple_array_str, echo=TRUE}
+bm_simple_array_str <- microbenchmark(
+  structr = structr::parse_json(json_simple_array_str, structr_simple_array_str),
+  jsonlite = jsonlite::fromJSON(json_simple_array_str),
+  rjson = rjson::fromJSON(json_simple_array_str),
+  RJSONIO = RJSONIO::fromJSON(json_simple_array_str),
+  times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
+)
+
+print_and_plot(bm_simple_array_str,
+  title = "Scenario 3: Simple Array (Strings) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_fast, ", log scale)")
+)
+```
+
+## Scenario 4: Nested Object
+
+```{r bm_nested_object, echo=TRUE}
+bm_nested_object <-
+  microbenchmark(
+    structr = structr::parse_json(json_nested_object, structr_nested_object),
+    jsonlite = jsonlite::fromJSON(json_nested_object, simplifyVector = FALSE),
+    rjson = rjson::fromJSON(json_nested_object),
+    RJSONIO = RJSONIO::fromJSON(json_nested_object, simplify = FALSE), # avoid matrix/df conversion
+    times = benchmark_times_fast, unit = benchmark_unit_fast, check = NULL # Disable check due to potential minor diffs
+  )
+
+print_and_plot(bm_nested_object,
+  title = "Scenario 4: Nested Object Parsing Time",
+  y_label = paste("Time (", benchmark_unit_fast, ", log scale)")
+)
+```
+
+## Scenario 5: Array of Simple Objects (100 Objects)
+
+```{r bm_array_of_objects, echo=TRUE}
+bm_array_of_objects <-
+  microbenchmark(
+    structr = structr::parse_json(json_array_of_objects, structr_array_of_objects),
+    jsonlite = jsonlite::fromJSON(json_array_of_objects, simplifyVector = FALSE, simplifyDataFrame = FALSE), # Force list output
+    rjson = rjson::fromJSON(json_array_of_objects),
+    RJSONIO = RJSONIO::fromJSON(json_array_of_objects, simplify = FALSE), # Results in list of lists
+    times = benchmark_times_medium, unit = benchmark_unit_medium, check = "equal"
+  )
+print_and_plot(bm_array_of_objects,
+  title = "Scenario 5: Array of 100 Objects Parsing Time",
+  y_label = paste("Time (", benchmark_unit_medium, ", log scale)")
+)
+```
+
+## Scenario 6: Large Array of Simple Objects (1000 Objects)
+
+```{r bm_large_array_of_objects, echo=TRUE}
+bm_large_array_of_objects <-
+  microbenchmark(
+    structr = structr::parse_json(json_large_array_of_objects, structr_large_array_of_objects),
+    jsonlite = jsonlite::fromJSON(json_large_array_of_objects, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+    rjson = rjson::fromJSON(json_large_array_of_objects),
+    RJSONIO = RJSONIO::fromJSON(json_large_array_of_objects, simplify = FALSE),
+    times = benchmark_times_medium,
+    unit = benchmark_unit_medium,
+    check = "equal" # Disable check
+  )
+
+print_and_plot(bm_large_array_of_objects,
+  title = "Scenario 6: Array of 1000 Objects Parsing Time",
+  y_label = paste("Time (", benchmark_unit_medium, ", log scale)")
+)
+```
+
+## Scenario 7: Large Integer Array (10,000 items)
+
+```{r bm_large_array_int, echo=TRUE}
+bm_large_array_int <-
+  microbenchmark(
+    structr = structr::parse_json(json_large_array_int, structr_large_array_int),
+    jsonlite = jsonlite::fromJSON(json_large_array_int),
+    rjson = rjson::fromJSON(json_large_array_int),
+    RJSONIO = RJSONIO::fromJSON(json_large_array_int),
+    times = benchmark_times_medium,
+    unit = benchmark_unit_medium,
+    check = "equal"
+  )
+print_and_plot(bm_large_array_int,
+  title = "Scenario 7: Large Integer Array (10k) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_medium, ", log scale)")
+)
+```
+
+## Scenario 8: Large String Array (10,000 items)
+
+```{r bm_large_array_str, echo=TRUE}
+bm_large_array_str <-
+  microbenchmark(
+    structr = structr::parse_json(json_large_array_str, structr_large_array_str),
+    jsonlite = jsonlite::fromJSON(json_large_array_str),
+    rjson = rjson::fromJSON(json_large_array_str),
+    RJSONIO = RJSONIO::fromJSON(json_large_array_str),
+    times = benchmark_times_medium,
+    unit = benchmark_unit_medium,
+    check = "equal"
+  )
+print_and_plot(bm_large_array_str,
+  title = "Scenario 8: Large String Array (10k) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_medium, ", log scale)")
+)
+```
+
+## Scenario 9: Deeply Nested Object (10 levels)
+
+```{r bm_deep_nest, echo=TRUE}
+bm_deep_nest <- microbenchmark(
+  structr = structr::parse_json(json_deep_nest, structr_deep_nest),
+  jsonlite = jsonlite::fromJSON(json_deep_nest, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+  rjson = rjson::fromJSON(json_deep_nest),
+  RJSONIO = RJSONIO::fromJSON(json_deep_nest, simplify = FALSE),
+  times = benchmark_times_fast,
+  unit = benchmark_unit_fast,
+  check = "equal"
+)
+print_and_plot(bm_deep_nest,
+  title = "Scenario 9: Deeply Nested Object (10 Levels) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_fast, ", log scale)")
+)
+```
+
+## Scenario 10: Wide Object (100 fields)
+
+```{r bm_wide_object, echo=TRUE}
+bm_wide_object <- microbenchmark(
+  structr = structr::parse_json(json_wide_object, structr_wide_object),
+  jsonlite = jsonlite::fromJSON(json_wide_object, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+  rjson = rjson::fromJSON(json_wide_object),
+  RJSONIO = RJSONIO::fromJSON(json_wide_object, simplify = FALSE),
+  times = benchmark_times_medium,
+  unit = benchmark_unit_medium,
+  check = "equal"
+)
+print_and_plot(bm_wide_object,
+  title = "Scenario 10: Wide Object (100 Fields) Parsing Time",
+  y_label = paste("Time (", benchmark_unit_medium, ", log scale)")
+)
+```
+
+# Summary Across Scenarios
+
+Let's combine the median times from all scenarios to visualize relative performance. We convert all times to microseconds (`us`) for comparison.
+
+```{r combined_results, echo=FALSE}
+# Function to extract median times, add scenario info, and convert units
+extract_median <- function(bm_result, scenario_name, original_unit) {
+  if (is.null(bm_result)) {
+    return(NULL)
+  } # Handle cases where benchmark didn't run
+
+  conversion_factor <- switch(original_unit,
+    "us" = 1,
+    "ms" = 1000,
+    "s"  = 1000000,
+    1 # Default if unit unknown
+  )
+
+  summary(bm_result) |>
+    mutate(
+      Scenario = scenario_name,
+      Median_Time_us = median * conversion_factor
+    ) |>
+    select(Scenario, Package = expr, Median_Time_us)
+}
+
+# List of benchmark results and their parameters
+benchmarks_list <- list(
+  list(bm = bm_simple_object, name = "1: Simple Object", unit = benchmark_unit_fast),
+  list(bm = bm_simple_array_int, name = "2: Simple Array Int", unit = benchmark_unit_fast),
+  list(bm = bm_simple_array_str, name = "3: Simple Array Str", unit = benchmark_unit_fast),
+  list(bm = bm_nested_object, name = "4: Nested Object", unit = benchmark_unit_fast),
+  list(bm = bm_array_of_objects, name = "5: Array (100 Obj)", unit = benchmark_unit_medium),
+  list(bm = bm_large_array_of_objects, name = "6: Array (1k Obj)", unit = benchmark_unit_medium),
+  list(bm = bm_large_array_int, name = "7: Large Array Int (10k)", unit = benchmark_unit_medium),
+  list(bm = bm_large_array_str, name = "8: Large Array Str (10k)", unit = benchmark_unit_medium),
+  list(bm = bm_deep_nest, name = "9: Deep Nest (10 Lvl)", unit = benchmark_unit_fast),
+  list(bm = bm_wide_object, name = "10: Wide Object (100 Fld)", unit = benchmark_unit_medium)
+)
+
+# Combine all results
+all_medians <- bind_rows(
+  lapply(benchmarks_list, function(x) extract_median(x$bm, x$name, x$unit))
+)
+
+# Check if we have any data to plot
+if (nrow(all_medians) > 0) {
+  # Plot combined results
+  ggplot(all_medians, aes(x = reorder(Scenario, Median_Time_us), y = Median_Time_us, fill = Package)) +
+    geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+    scale_y_log10(labels = scales::comma) + # Log scale often necessary
+    coord_flip() + # Flip makes scenario names easier to read
+    labs(
+      title = "Median JSON Parsing Time Across Scenarios",
+      x = "Benchmark Scenario (Ordered by Median Time)",
+      y = "Median Time (microseconds, log scale)",
+      fill = "Package"
+    ) +
+    theme(axis.text.y = element_text(hjust = 1)) # Adjust text alignment if needed
+} else {
+  message("No benchmark data available to generate summary plot.")
+}
+```
+
+# Conclusion

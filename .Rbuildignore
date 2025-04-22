@@ -8,3 +8,6 @@
 ^pkgdown$
 ^LICENSE\.md$
 ^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$
+vignettes/bench.Rmd

@@ -1,6 +1,6 @@
-use extendr_api::prelude::*;
+use extendr_api::{prelude::*, ToVectorValue};
+use hashbrown::HashMap;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -121,7 +121,7 @@ impl<'de, 'a> DeserializeSeed<'de> for StructureSeed<'a> {
 
         // Delegate deserialization based on the expected structure type
         match self.structure {
-            Structure::Integer => deserializer.deserialize_i64(visitor), // Prefer i64 for JSON number flexibility
+            Structure::Integer => deserializer.deserialize_i32(visitor),
             Structure::Double => deserializer.deserialize_f64(visitor),
             Structure::String => deserializer.deserialize_string(visitor),
             Structure::Logical => deserializer.deserialize_bool(visitor),
@@ -168,8 +168,15 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     {
         if let Structure::Optional(structure) = self.structure {
             let visitor = StructureVisitor { structure };
-            // Allow null for optional types
-            deserializer.deserialize_any(visitor)
+            match structure.as_ref() {
+                Structure::Integer => deserializer.deserialize_i32(visitor),
+                Structure::Double => deserializer.deserialize_f64(visitor),
+                Structure::String => deserializer.deserialize_string(visitor),
+                Structure::Logical => deserializer.deserialize_bool(visitor),
+                Structure::Vector(_) => deserializer.deserialize_seq(visitor),
+                Structure::Map { .. } => deserializer.deserialize_map(visitor),
+                _ => Err(de::Error::invalid_type(de::Unexpected::Option, &self)),
+            }
         } else {
             Err(de::Error::invalid_type(de::Unexpected::Option, &self))
         }
@@ -210,52 +217,31 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         }
     }
 
-    fn visit_i64<E>(self, v: i64) -> std::result::Result<Self::Value, E>
+    fn visit_i32<E>(self, v: i32) -> std::result::Result<Self::Value, E>
     where
         E: de::Error,
     {
         match self.structure {
-            Structure::Integer => {
-                // R integers are i32. Check for overflow.
-                if v >= i32::MIN as i64 && v <= i32::MAX as i64 {
-                    Ok(NotNull(Robj::from(v as i32)))
-                } else {
-                    Err(de::Error::invalid_value(
-                        de::Unexpected::Signed(v),
-                        &"an integer representable in R (32-bit signed)",
-                    ))
-                }
-            }
-            Structure::Double => {
-                // Allow integer to be treated as double
-                Ok(NotNull(Robj::from(v as f64)))
-            }
-            _ => Err(de::Error::invalid_type(de::Unexpected::Signed(v), &self)),
+            Structure::Integer => Ok(NotNull(Robj::from(v))),
+            Structure::Double => Ok(NotNull(Robj::from(v as f64))),
+            _ => Err(de::Error::invalid_type(
+                de::Unexpected::Signed(v as i64),
+                &self,
+            )),
         }
     }
 
-    // Also handle u64 just in case JSON parser produces it (though less common)
-    fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
+    fn visit_u32<E>(self, v: u32) -> std::result::Result<Self::Value, E>
     where
         E: de::Error,
     {
         match self.structure {
-            Structure::Integer => {
-                if v <= i32::MAX as u64 {
-                    // Check against i32 max
-                    Ok(NotNull(Robj::from(v as i32)))
-                } else {
-                    Err(de::Error::invalid_value(
-                        de::Unexpected::Unsigned(v),
-                        &"an integer representable in R (32-bit signed)",
-                    ))
-                }
-            }
-            Structure::Double => {
-                // Allow integer to be treated as double
-                Ok(NotNull(Robj::from(v as f64)))
-            }
-            _ => Err(de::Error::invalid_type(de::Unexpected::Unsigned(v), &self)),
+            Structure::Integer => Ok(NotNull(Robj::from(v as i32))),
+            Structure::Double => Ok(NotNull(Robj::from(v as f64))),
+            _ => Err(de::Error::invalid_type(
+                de::Unexpected::Unsigned(v as u64),
+                &self,
+            )),
         }
     }
 
@@ -264,17 +250,6 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         E: de::Error,
     {
         match self.structure {
-            Structure::Integer => {
-                // Allow floats that are whole numbers if strict int required
-                if v.fract() == 0.0 && v >= i32::MIN as f64 && v <= i32::MAX as f64 {
-                    Ok(NotNull(Robj::from(v as i32)))
-                } else {
-                    Err(de::Error::invalid_value(
-                        de::Unexpected::Float(v),
-                        &"an integer or a whole number float representable as i32",
-                    ))
-                }
-            }
             Structure::Double => Ok(NotNull(Robj::from(v))),
             _ => Err(de::Error::invalid_type(de::Unexpected::Float(v), &self)),
         }
@@ -309,8 +284,43 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
+        fn seq_to_r_vec<'de, T, A>(
+            mut seq: A,
+            size_hint: usize,
+        ) -> std::result::Result<Nullable<Robj>, A::Error>
+        where
+            T: serde::Deserialize<'de> + ToVectorValue,
+            A: SeqAccess<'de>,
+        {
+            let mut ints = Vec::with_capacity(size_hint);
+            while let Some(value) = seq.next_element::<T>()? {
+                ints.push(value);
+            }
+            Ok(NotNull(Robj::from(ints)))
+        }
+
         if let Structure::Vector(element_structure) = self.structure {
+            let size_hint = seq.size_hint().unwrap_or(0);
+            match element_structure.as_ref() {
+                Structure::Integer => return seq_to_r_vec::<i32, A>(seq, size_hint),
+                Structure::Double => return seq_to_r_vec::<f64, A>(seq, size_hint),
+                Structure::Logical => return seq_to_r_vec::<bool, A>(seq, size_hint),
+                Structure::String => return seq_to_r_vec::<&str, A>(seq, size_hint),
+                Structure::Optional(element_structure) => match element_structure.as_ref() {
+                    Structure::Integer => return seq_to_r_vec::<Option<i32>, A>(seq, size_hint),
+                    Structure::Double => return seq_to_r_vec::<Option<f64>, A>(seq, size_hint),
+                    Structure::Logical => return seq_to_r_vec::<Option<bool>, A>(seq, size_hint),
+                    Structure::String => return seq_to_r_vec::<Option<&str>, A>(seq, size_hint),
+                    _ => (),
+                },
+                _ => (),
+            }
+
+            // Anything not handled above is a custom structure
+            // We need to create a new seed for the elements
+
             let mut values = Vec::with_capacity(seq.size_hint().unwrap_or(0));
+
             // Create the seed for elements *once*
             let element_seed = StructureSeed {
                 structure: element_structure,
@@ -338,18 +348,16 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         } = self.structure
         {
             let ignore_extra_fields = *ignore_extra_fields;
-            let mut r_map = HashMap::<&str, Nullable<Robj>>::new();
+
+            let size_hint = map.size_hint().unwrap_or(0);
+
+            let mut r_names = Vec::with_capacity(fields.len());
+            let mut r_values = Vec::with_capacity(fields.len());
 
             // Process entries from the JSON map
             while let Some(key_str) = map.next_key::<&str>()? {
                 if let Some(expected_field_structure) = fields.get(key_str) {
-                    // Found an expected key, deserialize the value using the specific seed
-                    let value_seed = StructureSeed {
-                        structure: expected_field_structure,
-                    };
-                    let value_robj = map.next_value_seed(value_seed)?;
-
-                    if r_map.contains_key(key_str) {
+                    if r_names.contains(&key_str) {
                         // Duplicate key found in JSON
                         return Err(de::Error::custom(format!(
                             "Duplicate key '{}' in JSON object",
@@ -357,7 +365,14 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
                         )));
                     }
 
-                    r_map.insert(key_str, value_robj);
+                    // Found an expected key, deserialize the value using the specific seed
+                    let value_seed = StructureSeed {
+                        structure: expected_field_structure,
+                    };
+                    let value_robj = map.next_value_seed(value_seed)?;
+
+                    r_names.push(key_str);
+                    r_values.push(value_robj);
                 } else {
                     if ignore_extra_fields {
                         continue; // Ignore extra fields if specified
@@ -368,7 +383,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             }
 
             for defined_name in *expected_fields_str {
-                if !r_map.contains_key(defined_name) {
+                if !r_names.contains(defined_name) {
                     if let Some(Structure::Optional(_)) = fields.get(*defined_name) {
                         continue;
                     }
@@ -377,7 +392,9 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
                 }
             }
 
-            let r_list = List::from_hashmap(r_map).expect("Failed to create R list");
+            // Create the R list from the names and values
+            let mut r_list = List::from_values(r_values);
+            r_list.set_names(r_names).expect("Failed to set names");
 
             Ok(NotNull(r_list.into()))
         } else {

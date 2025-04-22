@@ -48,26 +48,26 @@ test_that("Parses simple atomic types correctly", {
 test_that("Parses simple vectors correctly", {
   expect_equal(
     parse_json("[1, 2, 3]", build_structure(s_vector(s_integer()))),
-    list(1L, 2L, 3L)
+    c(1L, 2L, 3L)
   )
-  expect_equal(parse_json("[]", build_structure(s_vector(s_string()))), list()) # Empty vector
+  expect_equal(parse_json("[]", build_structure(s_vector(s_string()))), character(0)) # Empty vector
   expect_equal(
     parse_json("[\"a\", \"b\"]", build_structure(s_vector(s_string()))),
-    list("a", "b")
+    c("a", "b")
   )
   expect_equal(
     parse_json("[1.1, 2.2, 3.0]", build_structure(s_vector(s_double()))),
-    list(1.1, 2.2, 3.0)
+    c(1.1, 2.2, 3.0)
   )
   # Mixed integer/float source data for double vector
   expect_equal(
     parse_json("[1, 2.5, 3]", build_structure(s_vector(s_double()))),
-    list(1.0, 2.5, 3.0)
+    c(1.0, 2.5, 3.0)
   )
   # Whole number floats source data for integer vector
   expect_equal(
     parse_json("[1.0, 2.0, 3.0]", build_structure(s_vector(s_double()))),
-    list(1, 2, 3)
+    c(1, 2, 3)
   )
 })
 
@@ -92,8 +92,8 @@ test_that("Parses nested structures correctly", {
   expected <- list(
     id = 101L,
     user = list(username = "alice", active = TRUE),
-    tags = list("R", "Rust", "JSON"),
-    scores = list(9.5, 8.8)
+    tags = c("R", "Rust", "JSON"),
+    scores = c(9.5, 8.8)
   )
   # Order might differ, sort names recursively? Simpler to check components
   result <- parse_json(json_str, nested_struct)
@@ -285,7 +285,7 @@ test_that("Handles optional fields within maps correctly", {
 test_that("Handles optional vectors correctly", {
   # An optional vector (the whole vector can be null)
   s_opt_vec <- build_structure(s_optional(s_vector(s_string())))
-  expect_equal(parse_json('["a", "b"]', s_opt_vec), list("a", "b"))
+  expect_equal(parse_json('["a", "b"]', s_opt_vec), c("a", "b"))
   expect_equal(parse_json("null", s_opt_vec), NULL)
   expect_error(parse_json('["a", 1]', s_opt_vec)) # Wrong element type when present
   expect_error(parse_json('{"a": 1}', s_opt_vec)) # Wrong container type when present
@@ -294,11 +294,11 @@ test_that("Handles optional vectors correctly", {
   s_vec_opt_el <- build_structure(s_vector(s_optional(s_integer())))
   expect_equal(
     parse_json('[1, null, 3, null]', s_vec_opt_el),
-    list(1L, NULL, 3L, NULL)
+    c(1L, NA, 3L, NA)
   )
-  expect_equal(parse_json('[1, 2, 3]', s_vec_opt_el), list(1L, 2L, 3L))
-  expect_equal(parse_json('[null, null]', s_vec_opt_el), list(NULL, NULL))
-  expect_equal(parse_json('[]', s_vec_opt_el), list())
+  expect_equal(parse_json('[1, 2, 3]', s_vec_opt_el), c(1L, 2L, 3L))
+  expect_equal(parse_json('[null, null]', s_vec_opt_el), c(NA_integer_, NA_integer_))
+  expect_equal(parse_json('[]', s_vec_opt_el), integer(0))
   expect_error(parse_json('[1, "a", 3]', s_vec_opt_el)) # Wrong element type when present
 })
 

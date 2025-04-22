@@ -11,5 +11,6 @@ name = 'structr'
 
 [dependencies]
 extendr-api = { version = '0.8', features = ["result_condition"] }
+hashbrown = "0.15.2"
 serde = "1.0.219"
 simd-json = "0.14.3"
