@@ -71,7 +71,7 @@ vector. This should be the result of another <code>s_*</code> function call (e.g
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Define a vector of strings</span></span></span>
 <span class="r-in"><span><span class="va">vec_str_def</span> <span class="op">&lt;-</span> <span class="fu">s_vector</span><span class="op">(</span><span class="fu"><a href="structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">vec_str_def</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x562767250d30&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x55594adecae0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Structure"</span>
 <span class="r-in"><span><span class="co"># Expected: list(type = "vector", value = list(type = "string"))</span></span></span>
@@ -81,7 +81,7 @@ vector. This should be the result of another <code>s_*</code> function call (e.g
 <span class="r-in"><span>  <span class="fu"><a href="s_map.html">s_map</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fu"><a href="structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="fu"><a href="structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">vec_obj_def</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x562769453d70&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x5559483cb880&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Structure"</span>
 <span class="r-in"><span><span class="co"># Expected: list(type = "vector", value = list(type = "map",</span></span></span>
