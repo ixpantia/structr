@@ -1,0 +1,210 @@
+---
+title: "Getting Started with structr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with structr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(structr)
+```
+
+## Introduction
+
+Welcome to `structr`! This package provides a fast and robust way to parse JSON data in R while strictly validating it against a predefined schema. Instead of simply parsing JSON into R lists and then checking types and fields afterwards, `structr` performs validation *during* the parsing process.
+
+The core logic is implemented in Rust using the efficient `serde` and `serde_json` crates, offering significant performance benefits, especially for large or complex JSON inputs.
+
+This vignette will guide you through the basic workflow and core features.
+
+## Core Workflow
+
+Using `structr` typically involves three main steps:
+
+1.  **Define the Schema:** Use the `s_*` family of functions (`s_map`, `s_vector`, `s_integer`, `s_string`, `s_double`, `s_logical`, `s_optional`) to create an R list that represents the expected structure and data types of your JSON.
+2.  **Build the Structure:** Pass your schema definition list to the `build_structure()` function. This validates your schema *definition* itself and prepares an optimized internal representation used for parsing.
+3.  **Parse and Validate:** Call `parse_json()` with the JSON string (as input) and the *built structure* object (from step 2). If the JSON matches the structure, you get the corresponding R object (usually nested lists). If it doesn't match (wrong type, missing field, extra field, etc.), `structr` throws an informative error.
+
+Let's see this in action.
+
+## Example 1: Parsing a Simple Object
+
+Suppose we expect JSON representing a user with an ID, username, activity status, and a list of scores.
+
+**Step 1: Define the Schema**
+
+We use `s_map` for the top-level object. The arguments to `s_map` are named according to the expected JSON keys, and the values are further `s_*` definitions specifying the expected type for each key. `s_vector` defines an array where each element must match the provided type (`s_double` in this case).
+
+```{r define_simple_schema}
+user_schema <- s_map(
+  id = s_integer(),        # Expects a JSON integer (becomes R integer)
+  username = s_string(),     # Expects a JSON string (becomes R character)
+  is_active = s_logical(),   # Expects a JSON boolean (becomes R logical)
+  scores = s_vector(s_double()) # Expects a JSON array of numbers (becomes R list of numeric)
+)
+
+# Print the schema definition (it's just an R list)
+print(user_schema)
+```
+
+**Step 2: Build the Structure**
+
+Now, we pass this schema definition to `build_structure()`. This validates our definition (e.g., checks for duplicate names in `s_map`) and prepares it for the Rust backend.
+
+```{r build_simple_structure}
+user_structure <- build_structure(user_schema)
+
+# The built structure is an external pointer or specific object type internally
+# We don't usually need to inspect it directly.
+print(user_structure)
+```
+
+**Step 3: Parse and Validate JSON**
+
+Let's parse a valid JSON string using the built structure.
+
+```{r parse_valid_simple}
+valid_json <- '{
+  "id": 123,
+  "username": "testuser",
+  "is_active": true,
+  "scores": [9.5, 8.0, 10.0]
+}'
+
+parsed_data <- parse_json(valid_json, user_structure)
+
+# Print the parsed data
+print(parsed_data)
+
+# Check the structure of the resulting R object
+str(parsed_data)
+```
+
+As you can see, the JSON was parsed into an R list with the expected names and data types (note `id` is `integer`, `is_active` is `logical`, and scores contains `numeric`).
+
+## Example 2: Nesting and Optional Fields
+
+`structr` handles nested objects and arrays, as well as optional (nullable) fields. Let's define a schema for a product.
+
+**Step 1 & 2: Define Schema and Build Structure**
+
+Here, `details` is a nested map, `tags` is a vector of strings, and `description` uses `s_optional()`, meaning it can be a string or JSON `null`.
+
+```{r define_build_nested}
+product_schema <- s_map(
+  product_id = s_string(),
+  details = s_map(            # Nested object
+    name = s_string(),
+    price = s_double()
+  ),
+  tags = s_vector(s_string()), # Array of strings
+  description = s_optional(s_string()) # Can be string or null
+)
+
+product_structure <- build_structure(product_schema)
+```
+
+**Step 3: Parse and Validate JSON**
+
+Let's try parsing different valid JSON strings.
+
+```{r parse_nested}
+# Case 1: Optional field 'description' is a string
+json_with_desc <- '{
+  "product_id": "XYZ-123",
+  "details": {"name": "Gadget", "price": 19.99},
+  "tags": ["tech", "new"],
+  "description": "A useful gadget"
+}'
+parsed1 <- parse_json(json_with_desc, product_structure)
+cat("Parsed with description:\n")
+str(parsed1)
+cat("Value of description:", parsed1$description, "\n\n")
+
+
+# Case 2: Optional field 'description' is null
+json_null_desc <- '{
+  "product_id": "ABC-789",
+  "details": {"name": "Widget", "price": 9.50},
+  "tags": [],
+  "description": null
+}'
+parsed2 <- parse_json(json_null_desc, product_structure)
+cat("Parsed with null description:\n")
+str(parsed2)
+cat("Value of description:", is.null(parsed2$description), "\n") # Returns R NULL
+```
+
+**Important Note on `s_optional` in Maps:** `s_optional(s_string())` means the value associated with the key `description` can be a JSON string or JSON `null`. It does **not** mean the key `description` can be completely absent from the JSON object. If a key defined in `s_map` (even if its value is optional) is missing from the JSON, `structr` will still raise a "missing field" error by default.
+
+```{r parse_missing_optional}
+# Case 3: Optional field 'description' is MISSING (causes error)
+json_missing_desc <- '{
+  "product_id": "DEF-456",
+  "details": {"name": "Thingy", "price": 5.00},
+  "tags": ["misc"]
+}'
+
+# Using try() to catch the expected error
+try(parse_json(json_missing_desc, product_structure))
+```
+
+## Handling Validation Errors
+
+A key feature of `structr` is its strict validation. If the input JSON doesn't conform to the built structure, it throws a specific error.
+
+Let's use the `user_structure` from Example 1 again.
+
+```{r error_handling, error=TRUE}
+# Error: Invalid JSON syntax
+json_syntax_error <- '{ "id": 1 '
+try(parse_json(json_syntax_error, user_structure))
+
+# Error: Type mismatch (id should be integer, got string)
+json_type_error <- '{ "id": "123", "username": "badtype", "is_active": true, "scores": [] }'
+try(parse_json(json_type_error, user_structure))
+
+# Error: Missing required field (username is missing)
+json_missing_field <- '{ "id": 456, "is_active": false, "scores": [1.1] }'
+try(parse_json(json_missing_field, user_structure))
+
+# Error: Extra field (email is not defined in user_schema)
+# Note: By default, s_map does not allow extra fields.
+json_extra_field <- '{
+  "id": 789, "username": "extra", "is_active": true, "scores": [], "email": "a@b.com"
+}'
+try(parse_json(json_extra_field, user_structure))
+
+# Error: Wrong type within a vector (scores expects numbers, got string)
+json_vector_type_error <- '{
+  "id": 113, "username": "vec", "is_active": true, "scores": [1.0, "two", 3.0]
+}'
+try(parse_json(json_vector_type_error, user_structure))
+
+# Error: Integer value out of R's 32-bit range
+json_int_overflow <- '{ "id": 2147483648, "username": "big", "is_active": true, "scores": [] }'
+try(parse_json(json_int_overflow, user_structure))
+```
+
+These informative errors help pinpoint exactly where the incoming JSON data deviates from the expected structure.
+
+## Conclusion
+
+`structr` provides a powerful mechanism for ensuring the integrity and correctness of JSON data used within your R analyses. By defining a clear schema and using `build_structure()` followed by `parse_json()`, you gain:
+
+*   **Speed:** Leveraging Rust and `serde` for parsing.
+*   **Safety:** Guaranteeing that the parsed data conforms to your expectations regarding structure and types.
+*   **Clarity:** Explicit schema definitions document the expected data format.
+*   **Debugging:** Informative error messages quickly identify issues with input data.
+
+Explore the documentation for `s_map`, `s_vector`, `s_optional`, and other `s_*` functions, as well as `parse_json`, for more details and advanced usage.
+
