@@ -1,5 +1,5 @@
 
 #' @export
-print.Structure <- function(x) {
+print.Structure <- function(x, ...) {
   x$print()
 }
