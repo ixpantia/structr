@@ -3,7 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   getting_started: getting_started.html
-last_built: 2025-04-22T07:03Z
+last_built: 2025-04-22T07:06Z
 urls:
   reference: https://ixpantia.github.io/structr/reference
   article: https://ixpantia.github.io/structr/articles
