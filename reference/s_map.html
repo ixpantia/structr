@@ -81,7 +81,7 @@ cause a validation error. <em>Note: This argument is currently processed by <cod
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Define a simple map with a string 'name' and an integer 'age'</span></span></span>
 <span class="r-in"><span><span class="va">map_def1</span> <span class="op">&lt;-</span> <span class="fu">s_map</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>, age <span class="op">=</span> <span class="fu"><a href="structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">map_def1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x556db4c31680&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x562763ae6660&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Structure"</span>
 <span class="r-in"><span><span class="co"># Expected: list(type = "map", value = list(name = list(type = "string"),</span></span></span>
@@ -103,7 +103,7 @@ cause a validation error. <em>Note: This argument is currently processed by <cod
 <span class="r-in"><span><span class="co"># Define an empty map</span></span></span>
 <span class="r-in"><span><span class="va">empty_map_def</span> <span class="op">&lt;-</span> <span class="fu">s_map</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">empty_map_def</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x556db4d37fd0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x56276b3d01c0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Structure"</span>
 <span class="r-in"><span><span class="co"># Expected: list(type = "map", value = list(), ignore_extra_fields = FALSE)</span></span></span>
@@ -111,7 +111,7 @@ cause a validation error. <em>Note: This argument is currently processed by <cod
 <span class="r-in"><span><span class="co"># Define a map ignoring extra fields</span></span></span>
 <span class="r-in"><span><span class="va">map_def_ignore</span> <span class="op">&lt;-</span> <span class="fu">s_map</span><span class="op">(</span>required_field <span class="op">=</span> <span class="fu"><a href="structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>, .ignore_extra_fields <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">map_def_ignore</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x556db519c320&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x56276b3d0390&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Structure"</span>
 <span class="r-in"><span><span class="co"># Expected: list(type = "map", value = list(required_field = list(type = "integer")),</span></span></span>
