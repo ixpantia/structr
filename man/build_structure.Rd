@@ -67,17 +67,6 @@ complex_definition <- s_map(
 
 validated_complex_structure <- build_structure(complex_definition)
 
-# Example of an invalid definition caught by build_structure
-invalid_definition <- s_map(
-   name = s_string(),
-   name = s_integer() # Duplicate field name
-)
-# This will throw an error when build_structure is called:
-try(build_structure(invalid_definition))
-
-# Another invalid example: missing element structure in s_vector
-try(build_structure(s_vector()))
-
 # Use the built structure with parse_json (see ?parse_json examples)
 json_data <- '{
   "product_id": "XYZ-123",

@@ -2,70 +2,36 @@
 % Please edit documentation in R/structure.R
 \name{s_map}
 \alias{s_map}
-\title{Define a Map (Object) Structure using Named Arguments}
+\title{Define a Map (Object) Structure}
 \usage{
 s_map(..., .ignore_extra_fields = FALSE)
 }
 \arguments{
-\item{...}{Named arguments defining the map's structure. The names correspond
-to the required JSON object keys (strings). The values must be structure
-definitions created by \verb{s_*} function calls (e.g., \code{id = s_integer()},
-\code{tags = s_vector(s_string())}, \code{metadata = s_map(...)}). An empty map
-(representing an empty JSON object \code{{}}) can be created by calling \code{s_map()}
-with no arguments.}
+\item{...}{Named field definitions. Each name corresponds to a key in the JSON object,
+and each value must be a structure created by an \verb{s_*} function. Call \code{s_map()} with no
+arguments to define an empty object.}
 
-\item{.ignore_extra_fields}{Logical (default \code{FALSE}). If \code{TRUE}, allows the JSON
-object to contain fields not specified in \code{...}. These extra fields will be
-ignored during parsing. If \code{FALSE} (default), extra fields in the JSON will
-cause a validation error. \emph{Note: This argument is currently processed by \code{build_structure}.}}
+\item{.ignore_extra_fields}{Logical (default \code{FALSE}). If \code{TRUE}, allows extra fields in
+the input JSON to be ignored instead of triggering a validation error.}
 }
 \value{
-An intermediate list representing the map structure definition.
+An intermediate structure definition used by \code{build_structure()}.
 }
 \description{
-Creates an intermediate definition for a JSON object (map) with named fields and
-their corresponding structure definitions. This definition is used within
-\code{s_vector()} or finalized by \code{build_structure()}.
+Creates a structure definition for a JSON object with named fields. Each field must be
+defined using an \verb{s_*} function (e.g., \code{s_string()}, \code{s_integer()}, or nested structures).
 }
 \examples{
-# Define a simple map with a string 'name' and an integer 'age'
-map_def1 <- s_map(name = s_string(), age = s_integer())
-build_structure(map_def1)
-# Expected: list(type = "map", value = list(name = list(type = "string"),
-#                                          age = list(type = "integer")),
-#                ignore_extra_fields = FALSE)
+# Simple object
+s_map(name = s_string(), age = s_integer())
 
-# Define a nested map
-map_def2 <- s_map(
+# Nested structure
+s_map(
   user = s_string(),
-  details = s_map(
-    email = s_string(),
-    active = s_logical()
-  ),
-  permissions = s_vector(s_string())
+  details = s_map(email = s_string(), active = s_logical()),
+  tags = s_vector(s_string())
 )
-str(build_structure(map_def2)) # Use str() for compact view
 
-# Define an empty map
-empty_map_def <- s_map()
-build_structure(empty_map_def)
-# Expected: list(type = "map", value = list(), ignore_extra_fields = FALSE)
-
-# Define a map ignoring extra fields
-map_def_ignore <- s_map(required_field = s_integer(), .ignore_extra_fields = TRUE)
-build_structure(map_def_ignore)
-# Expected: list(type = "map", value = list(required_field = list(type = "integer")),
-#                ignore_extra_fields = TRUE)
-
-# Parsing example (see ?parse_json)
-json_data <- '{"name": "Example", "age": 42}'
-parsed <- parse_json(json_data, build_structure(map_def1))
-print(parsed) # list(name = "Example", age = 42L)
-
-json_extra <- '{"name": "Example", "age": 42, "extra": true}'
-# This will error by default:
-try(parse_json(json_extra, build_structure(map_def1)))
-# This will succeed if using ignore_extra_fields = TRUE definition:
-parsed_ignore <- parse_json(json_extra, build_structure(map_def_ignore))
-# print(parsed_ignore) # list(required_field = ...) - requires matching json
+# Ignore extra JSON fields
+s_map(id = s_integer(), .ignore_extra_fields = TRUE)
 }

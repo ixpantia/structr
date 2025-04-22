@@ -1,4 +1,3 @@
-# --- File: R/structure.R ---
 #' Define Atomic Structure Types
 #'
 #' @description
@@ -92,66 +91,33 @@ s_vector <- function(element_structure) {
   list(type = "vector", value = element_structure)
 }
 
-#' Define a Map (Object) Structure using Named Arguments
+#' Define a Map (Object) Structure
 #'
-#' Creates an intermediate definition for a JSON object (map) with named fields and
-#' their corresponding structure definitions. This definition is used within
-#' `s_vector()` or finalized by `build_structure()`.
+#' Creates a structure definition for a JSON object with named fields. Each field must be
+#' defined using an `s_*` function (e.g., `s_string()`, `s_integer()`, or nested structures).
 #'
-#' @param ... Named arguments defining the map's structure. The names correspond
-#'   to the required JSON object keys (strings). The values must be structure
-#'   definitions created by `s_*` function calls (e.g., `id = s_integer()`,
-#'   `tags = s_vector(s_string())`, `metadata = s_map(...)`). An empty map
-#'   (representing an empty JSON object `{}`) can be created by calling `s_map()`
-#'   with no arguments.
-#' @param .ignore_extra_fields Logical (default `FALSE`). If `TRUE`, allows the JSON
-#'   object to contain fields not specified in `...`. These extra fields will be
-#'   ignored during parsing. If `FALSE` (default), extra fields in the JSON will
-#'   cause a validation error. *Note: This argument is currently processed by `build_structure`.*
+#' @param ... Named field definitions. Each name corresponds to a key in the JSON object,
+#'   and each value must be a structure created by an `s_*` function. Call `s_map()` with no
+#'   arguments to define an empty object.
+#' @param .ignore_extra_fields Logical (default `FALSE`). If `TRUE`, allows extra fields in
+#'   the input JSON to be ignored instead of triggering a validation error.
 #'
-#' @return An intermediate list representing the map structure definition.
+#' @return An intermediate structure definition used by `build_structure()`.
 #' @export
+#'
 #' @examples
-#' # Define a simple map with a string 'name' and an integer 'age'
-#' map_def1 <- s_map(name = s_string(), age = s_integer())
-#' build_structure(map_def1)
-#' # Expected: list(type = "map", value = list(name = list(type = "string"),
-#' #                                          age = list(type = "integer")),
-#' #                ignore_extra_fields = FALSE)
+#' # Simple object
+#' s_map(name = s_string(), age = s_integer())
 #'
-#' # Define a nested map
-#' map_def2 <- s_map(
+#' # Nested structure
+#' s_map(
 #'   user = s_string(),
-#'   details = s_map(
-#'     email = s_string(),
-#'     active = s_logical()
-#'   ),
-#'   permissions = s_vector(s_string())
+#'   details = s_map(email = s_string(), active = s_logical()),
+#'   tags = s_vector(s_string())
 #' )
-#' str(build_structure(map_def2)) # Use str() for compact view
 #'
-#' # Define an empty map
-#' empty_map_def <- s_map()
-#' build_structure(empty_map_def)
-#' # Expected: list(type = "map", value = list(), ignore_extra_fields = FALSE)
-#'
-#' # Define a map ignoring extra fields
-#' map_def_ignore <- s_map(required_field = s_integer(), .ignore_extra_fields = TRUE)
-#' build_structure(map_def_ignore)
-#' # Expected: list(type = "map", value = list(required_field = list(type = "integer")),
-#' #                ignore_extra_fields = TRUE)
-#'
-#' # Parsing example (see ?parse_json)
-#' json_data <- '{"name": "Example", "age": 42}'
-#' parsed <- parse_json(json_data, build_structure(map_def1))
-#' print(parsed) # list(name = "Example", age = 42L)
-#'
-#' json_extra <- '{"name": "Example", "age": 42, "extra": true}'
-#' # This will error by default:
-#' try(parse_json(json_extra, build_structure(map_def1)))
-#' # This will succeed if using ignore_extra_fields = TRUE definition:
-#' parsed_ignore <- parse_json(json_extra, build_structure(map_def_ignore))
-#' # print(parsed_ignore) # list(required_field = ...) - requires matching json
+#' # Ignore extra JSON fields
+#' s_map(id = s_integer(), .ignore_extra_fields = TRUE)
 s_map <- function(..., .ignore_extra_fields = FALSE) {
   # Capture the field definitions passed via ...
   map_fields <- list(...)
@@ -329,17 +295,6 @@ s_optional <- function(structure_definition) {
 #' )
 #'
 #' validated_complex_structure <- build_structure(complex_definition)
-#'
-#' # Example of an invalid definition caught by build_structure
-#' invalid_definition <- s_map(
-#'    name = s_string(),
-#'    name = s_integer() # Duplicate field name
-#' )
-#' # This will throw an error when build_structure is called:
-#' try(build_structure(invalid_definition))
-#'
-#' # Another invalid example: missing element structure in s_vector
-#' try(build_structure(s_vector()))
 #'
 #' # Use the built structure with parse_json (see ?parse_json examples)
 #' json_data <- '{

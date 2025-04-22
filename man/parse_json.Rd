@@ -2,128 +2,60 @@
 % Please edit documentation in R/parse_json.R
 \name{parse_json}
 \alias{parse_json}
-\title{Parse and Validate JSON According to a Structure}
+\title{Parse and Validate JSON Against a Structure}
 \usage{
 parse_json(json_string, structure)
 }
 \arguments{
-\item{json_string}{A single character string containing the JSON data to be parsed.}
+\item{json_string}{A character string containing the JSON input.}
 
-\item{structure}{The structure definition object, which is the result of calling
-\code{build_structure()} on a schema defined using \verb{s_*} functions (e.g.,
-\code{build_structure(s_map(id = s_integer()))}). This defines the expected
-format of the JSON.}
+\item{structure}{A structure definition created with \code{build_structure()}, based on \verb{s_*} functions.}
 }
 \value{
-If parsing and validation are successful, returns an R object mirroring
-the JSON structure:
+The parsed and validated data as an R object:
 \itemize{
-\item JSON objects are returned as named R \code{list}s.
-\item JSON arrays are returned as unnamed R \code{list}s (even if elements are atomic).
-\item JSON strings, numbers, booleans are returned as corresponding R
-atomic vectors of length 1 (character, numeric, integer, logical).
-\item R integers (\code{integer}) correspond to JSON integers within the 32-bit signed range.
-JSON numbers without fractional parts are coerced to integer if they fit.
-\item R doubles (\code{numeric}) correspond to any JSON number (including integers).
+\item JSON objects → named \code{list}s
+\item JSON arrays → unnamed \code{list}s
+\item Strings, numbers, booleans → scalar R values (character, numeric, integer, logical)
 }
-If parsing or validation fails, the function throws an error detailing the
-issue (e.g., invalid JSON syntax, type mismatch, missing field, extra field,
-duplicate object key, integer overflow).
+Errors are raised for invalid syntax, type mismatches, missing or extra fields, duplicate keys,
+and integer overflows.
 }
 \description{
-Parses a JSON string and validates its structure and types against a predefined
-schema created using \code{build_structure()}. It uses efficient streaming parsing
-and provides detailed error messages for mismatches.
+Parses a JSON string and validates it against a schema created with \code{build_structure()}.
+Returns an R object reflecting the JSON content if valid, or throws a detailed error.
 }
 \details{
 Validation checks include:
 \itemize{
-\item \strong{Type Matching:} Ensures JSON values match the types defined in the \code{structure}
-(e.g., a JSON string where an integer is expected will cause an error).
-Allows JSON integers to fulfill \code{s_double()} and JSON whole-number floats
-(e.g., \code{123.0}) to fulfill \code{s_integer()}.
-\item \strong{Required Fields:} All fields defined in an \code{s_map()} structure must be present
-in the corresponding JSON object. Missing fields cause an error.
-\item \strong{No Extra Fields:} By default, JSON objects cannot contain fields that are
-\emph{not} defined in the \code{s_map()} structure. Extra fields cause an error.
-(Note: Future versions might allow configuring this).
-\item \strong{Duplicate Keys:} Duplicate keys within a single JSON object are disallowed
-and will cause an error.
-\item \strong{Integer Range:} JSON integers being parsed into an \code{s_integer()} field must
-be within the range of R's 32-bit signed integers. Values outside this range cause an error.
-\item \strong{Vector Element Types:} All elements in a JSON array must conform to the single
-\code{element_structure} defined in the corresponding \code{s_vector()}.
+\item \strong{Types}: JSON values must match the declared structure (e.g., string vs integer).
+\item \strong{Required fields}: All fields in \code{s_map()} must be present.
+\item \strong{No extra fields}: Additional fields not in the structure cause errors (unless \code{.ignore_extra_fields = TRUE}).
+\item \strong{Duplicate keys}: Disallowed.
+\item \strong{Integer range}: Must fit within R's 32-bit integer limits for \code{s_integer()}.
+\item \strong{Homogeneous arrays}: Elements in \code{s_vector()} must match the defined structure.
 }
-The underlying parsing is done using \code{serde_json} in Rust for efficiency.
+
+Parsing is powered by \code{serde_json} in Rust for performance.
 }
 \examples{
-# 1. Define a structure
-user_structure_def <- s_map(
+# Define and build a structure
+schema <- build_structure(s_map(
   id = s_integer(),
   username = s_string(),
   is_active = s_logical(),
   scores = s_vector(s_double())
-)
-user_structure <- build_structure(user_structure_def)
+))
 
-# 2. Valid JSON matching the structure
-valid_json <- '{
-  "id": 123,
-  "username": "testuser",
-  "is_active": true,
-  "scores": [9.5, 8.0, 10.0]
-}'
-parsed_data <- parse_json(valid_json, user_structure)
-print(parsed_data)
-# Expected output: a list with correct types
-# list(id = 123L, username = "testuser", is_active = TRUE, scores = list(9.5, 8.0, 10.0))
-str(parsed_data)
+# Valid input
+json <- '{"id":1,"username":"user","is_active":true,"scores":[9.5,8.0]}'
+parse_json(json, schema)
 
-# --- Error Examples ---
-
-# Example 3: Invalid JSON syntax
-invalid_json_syntax <- '{ "id": 456, "username": "bad }'
-try(parse_json(invalid_json_syntax, user_structure))
-# Expected: Error related to JSON parsing (e.g., EOF)
-
-# Example 4: Type mismatch (id is string, expected integer)
-type_mismatch_json <- '{ "id": "789", "username": "wrongtype", "is_active": false, "scores": [] }'
-try(parse_json(type_mismatch_json, user_structure))
-# Expected: Error indicating invalid type for field "id"
-
-# Example 5: Missing required field (username is missing)
-missing_field_json <- '{ "id": 101, "is_active": true, "scores": [1.0] }'
-try(parse_json(missing_field_json, user_structure))
-# Expected: Error indicating missing field "username"
-
-# Example 6: Extra field not allowed (extra_field is not in structure)
-extra_field_json <- '{
-  "id": 112,
-  "username": "extra",
-  "is_active": true,
-  "scores": [],
-  "extra_field": "not allowed"
-}'
-try(parse_json(extra_field_json, user_structure))
-# Expected: Error indicating unknown field "extra_field"
-
-# Example 7: Wrong type within a vector (scores expects doubles)
-wrong_vector_type_json <- '{
-  "id": 113,
-  "username": "vec",
-  "is_active": true,
-  "scores": [1.0, "two", 3.0]
-}'
-try(parse_json(wrong_vector_type_json, user_structure))
-# Expected: Error indicating invalid type inside the "scores" array
-
-# Example 8: Integer overflow
-large_int_json <- '{ "id": 2147483648, "username": "big", "is_active": true, "scores": [] }'
-try(parse_json(large_int_json, user_structure))
-# Expected: Error indicating integer is outside R's 32-bit range
-
-# Example 9: Duplicate key in JSON object
-duplicate_key_json <- '{ "id": 1, "username": "first", "is_active": true, "username": "last" }'
-try(parse_json(duplicate_key_json, user_structure))
-# Expected: Error indicating duplicate key "username"
+# Common errors:
+# - Invalid JSON
+# - Wrong type (e.g., "id": "abc")
+# - Missing fields
+# - Unexpected extra fields
+# - Integer overflow
+# - Duplicate keys
 }
