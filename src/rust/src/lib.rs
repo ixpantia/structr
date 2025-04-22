@@ -27,6 +27,9 @@ enum Structure {
 
 #[extendr]
 impl Structure {
+    fn print(&self) {
+        rprintln!("{:#?}", self);
+    }
     fn convert_from_robj(value: Robj) -> Result<Self> {
         let list = value
             .as_list()

@@ -14,6 +14,8 @@ parse_json_impl <- function(json_string, structure) .Call(wrap__parse_json_impl,
 
 Structure <- new.env(parent = emptyenv())
 
+Structure$print <- function() invisible(.Call(wrap__Structure__print, self))
+
 Structure$convert_from_robj <- function(value) .Call(wrap__Structure__convert_from_robj, value)
 
 #' @export

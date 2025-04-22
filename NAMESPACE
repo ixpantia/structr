@@ -2,6 +2,7 @@
 
 S3method("$",Structure)
 S3method("[[",Structure)
+S3method(print,Structure)
 export(build_structure)
 export(parse_json)
 export(s_date)
