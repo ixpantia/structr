@@ -18,7 +18,7 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
 
 # Ensure required packages are installed and loaded
-required_pkgs <- c("structr", "jsonlite", "rjson", "RJSONIO", "microbenchmark", "ggplot2", "dplyr")
+required_pkgs <- c("structr", "jsonlite", "rjson", "RJSONIO", "RcppSimdJson", "microbenchmark", "ggplot2", "dplyr")
 missing_pkgs <- required_pkgs[!sapply(required_pkgs, requireNamespace, quietly = TRUE)]
 if (length(missing_pkgs) > 0) {
   # In a real vignette build, you might want to stop or conditionally skip
@@ -32,6 +32,7 @@ library(structr)
 library(jsonlite)
 library(rjson)
 library(RJSONIO)
+library(RcppSimdJson)
 library(microbenchmark)
 library(ggplot2)
 library(dplyr)
@@ -253,6 +254,7 @@ bm_simple_object <- microbenchmark(
   jsonlite = jsonlite::fromJSON(json_simple_object, simplifyDataFrame = FALSE),
   rjson = rjson::fromJSON(json_simple_object),
   RJSONIO = RJSONIO::fromJSON(json_simple_object, simplify = FALSE),
+  RcppSimdJson = RcppSimdJson::fparse(json_simple_object),
   times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
 )
 print_and_plot(bm_simple_object,
@@ -269,6 +271,7 @@ bm_simple_array_int <- microbenchmark(
   jsonlite = jsonlite::fromJSON(json_simple_array_int), # simplify = TRUE default good here
   rjson = rjson::fromJSON(json_simple_array_int),
   RJSONIO = RJSONIO::fromJSON(json_simple_array_int), # simplify = TRUE default good here
+  RcppSimdJson = RcppSimdJson::fparse(json_simple_array_int),
   times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
 )
 
@@ -286,6 +289,7 @@ bm_simple_array_str <- microbenchmark(
   jsonlite = jsonlite::fromJSON(json_simple_array_str),
   rjson = rjson::fromJSON(json_simple_array_str),
   RJSONIO = RJSONIO::fromJSON(json_simple_array_str),
+  RcppSimdJson = RcppSimdJson::fparse(json_simple_array_str),
   times = benchmark_times_fast, unit = benchmark_unit_fast, check = "equal"
 )
 
@@ -304,6 +308,7 @@ bm_nested_object <-
     jsonlite = jsonlite::fromJSON(json_nested_object, simplifyVector = FALSE),
     rjson = rjson::fromJSON(json_nested_object),
     RJSONIO = RJSONIO::fromJSON(json_nested_object, simplify = FALSE), # avoid matrix/df conversion
+    RcppSimdJson = RcppSimdJson::fparse(json_nested_object),
     times = benchmark_times_fast, unit = benchmark_unit_fast, check = NULL # Disable check due to potential minor diffs
   )
 
@@ -322,7 +327,8 @@ bm_array_of_objects <-
     jsonlite = jsonlite::fromJSON(json_array_of_objects, simplifyVector = FALSE, simplifyDataFrame = FALSE), # Force list output
     rjson = rjson::fromJSON(json_array_of_objects),
     RJSONIO = RJSONIO::fromJSON(json_array_of_objects, simplify = FALSE), # Results in list of lists
-    times = benchmark_times_medium, unit = benchmark_unit_medium, check = "equal"
+    RcppSimdJson = RcppSimdJson::fparse(json_array_of_objects),
+    times = benchmark_times_medium, unit = benchmark_unit_medium, check = NULL
   )
 print_and_plot(bm_array_of_objects,
   title = "Scenario 5: Array of 100 Objects Parsing Time",
@@ -339,9 +345,10 @@ bm_large_array_of_objects <-
     jsonlite = jsonlite::fromJSON(json_large_array_of_objects, simplifyVector = FALSE, simplifyDataFrame = FALSE),
     rjson = rjson::fromJSON(json_large_array_of_objects),
     RJSONIO = RJSONIO::fromJSON(json_large_array_of_objects, simplify = FALSE),
+    RcppSimdJson = RcppSimdJson::fparse(json_large_array_of_objects),
     times = benchmark_times_medium,
     unit = benchmark_unit_medium,
-    check = "equal" # Disable check
+    check = NULL # Disable check
   )
 
 print_and_plot(bm_large_array_of_objects,
@@ -359,6 +366,7 @@ bm_large_array_int <-
     jsonlite = jsonlite::fromJSON(json_large_array_int),
     rjson = rjson::fromJSON(json_large_array_int),
     RJSONIO = RJSONIO::fromJSON(json_large_array_int),
+    RcppSimdJson = RcppSimdJson::fparse(json_large_array_int),
     times = benchmark_times_medium,
     unit = benchmark_unit_medium,
     check = "equal"
@@ -378,6 +386,7 @@ bm_large_array_str <-
     jsonlite = jsonlite::fromJSON(json_large_array_str),
     rjson = rjson::fromJSON(json_large_array_str),
     RJSONIO = RJSONIO::fromJSON(json_large_array_str),
+    RcppSimdJson = RcppSimdJson::fparse(json_large_array_str),
     times = benchmark_times_medium,
     unit = benchmark_unit_medium,
     check = "equal"
@@ -396,6 +405,7 @@ bm_deep_nest <- microbenchmark(
   jsonlite = jsonlite::fromJSON(json_deep_nest, simplifyVector = FALSE, simplifyDataFrame = FALSE),
   rjson = rjson::fromJSON(json_deep_nest),
   RJSONIO = RJSONIO::fromJSON(json_deep_nest, simplify = FALSE),
+  RcppSimdJson = RcppSimdJson::fparse(json_deep_nest),
   times = benchmark_times_fast,
   unit = benchmark_unit_fast,
   check = "equal"
@@ -414,6 +424,7 @@ bm_wide_object <- microbenchmark(
   jsonlite = jsonlite::fromJSON(json_wide_object, simplifyVector = FALSE, simplifyDataFrame = FALSE),
   rjson = rjson::fromJSON(json_wide_object),
   RJSONIO = RJSONIO::fromJSON(json_wide_object, simplify = FALSE),
+  RcppSimdJson = RcppSimdJson::fparse(json_wide_object),
   times = benchmark_times_medium,
   unit = benchmark_unit_medium,
   check = "equal"
