@@ -147,5 +147,5 @@ This vignette covered the basic usage of `structr`. For more details on specific
 
 *   `?parse_json`
 *   `?build_structure`
-*   `?s_map`, `?s_vector`, `?s_integer`, `?s_double`, `?s_string`, `?s_logical`, `?s_optional`
+*   `?s_map`, `?s_vector`, `?s_integer`, `?s_double`, `?s_string`, `?s_logical`, `?s_optional`, `?s_date`
 

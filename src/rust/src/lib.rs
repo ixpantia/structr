@@ -1,6 +1,6 @@
 use extendr_api::{prelude::*, ToVectorValue};
-use hashbrown::HashMap;
-use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
+use hashbrown::{HashMap, HashSet};
+use serde::de::{self, DeserializeSeed, Deserializer, Expected, MapAccess, SeqAccess, Visitor};
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -9,12 +9,15 @@ use std::fmt;
 #[extendr]
 enum Structure {
     Map {
-        fields: HashMap<Box<str>, Structure>,
+        fields: HashMap<&'static str, Structure>,
         ignore_extra_fields: bool,
         expected_fields_str: &'static [&'static str], // We will need to leak some memory to have
                                                       // comprehensible error messages
     },
     Vector(Box<Structure>),
+    Date {
+        format: &'static str,
+    },
     Integer,
     Double,
     String,
@@ -40,6 +43,12 @@ impl Structure {
                 let element_structure = Structure::convert_from_robj(val_robj)?;
                 Ok(Structure::Optional(Box::new(element_structure)))
             }
+            "date" => {
+                let format = list.index("value")?.as_str().ok_or_else(|| {
+                    extendr_api::Error::Other("'value' element must be a string.".into())
+                })?;
+                Ok(Structure::Date { format })
+            }
             "string" => Ok(Structure::String),
             "integer" => Ok(Structure::Integer),
             "double" => Ok(Structure::Double),
@@ -63,7 +72,10 @@ impl Structure {
                         )));
                     }
                     let field_structure = Structure::convert_from_robj(val)?;
-                    fields.insert(key.into(), field_structure);
+
+                    let key: &'static str = Box::leak(key.into());
+
+                    fields.insert(key, field_structure);
                 }
 
                 let ignore_extra_fields = list
@@ -71,19 +83,8 @@ impl Structure {
                     .as_bool()
                     .unwrap_or(false);
 
-                fn expected_fields_str(
-                    fields: &HashMap<Box<str>, Structure>,
-                ) -> &'static [&'static str] {
-                    let fields = fields
-                        .keys()
-                        .cloned()
-                        .map(|k| Box::leak(k) as &'static str)
-                        .collect::<Box<[&'static str]>>();
-
-                    Box::leak(fields)
-                }
-
-                let expected_fields_str = expected_fields_str(&fields);
+                let expected_fields_str =
+                    Box::leak(fields.keys().cloned().collect::<Box<[&'static str]>>());
 
                 Ok(Structure::Map {
                     fields,
@@ -127,12 +128,25 @@ impl<'de, 'a> DeserializeSeed<'de> for StructureSeed<'a> {
             Structure::Logical => deserializer.deserialize_bool(visitor),
             Structure::Vector(_) => deserializer.deserialize_seq(visitor),
             Structure::Map { .. } => deserializer.deserialize_map(visitor),
+            Structure::Date { .. } => {
+                // Handle date types separately if needed
+                deserializer.deserialize_string(visitor)
+            }
             Structure::Optional(_) => {
                 // Handle optional types by allowing null values
                 deserializer.deserialize_option(visitor)
             }
         }
     }
+}
+
+fn parse_r_date(v: &str, format: &'static str) -> std::result::Result<f64, chrono::ParseError> {
+    let date = chrono::NaiveDate::parse_from_str(v, format)?;
+
+    // Convert chrono::NaiveDate to an integer counting days since
+    // EPOCH
+    const EPOCH: chrono::NaiveDate = chrono::NaiveDate::from_ymd(1970, 1, 1);
+    Ok((date - EPOCH).num_days() as f64)
 }
 
 // --- NEW: StructureVisitor ---
@@ -151,6 +165,7 @@ fn expected_type_str(s: &Structure) -> &'static str {
         Structure::Vector(_) => "an array/vector",
         Structure::Map { .. } => "an object/map",
         Structure::Optional(_) => "an optional value (nullable)",
+        Structure::Date { .. } => "a date",
     }
 }
 
@@ -174,6 +189,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
                 Structure::String => deserializer.deserialize_string(visitor),
                 Structure::Logical => deserializer.deserialize_bool(visitor),
                 Structure::Vector(_) => deserializer.deserialize_seq(visitor),
+                Structure::Date { .. } => deserializer.deserialize_string(visitor),
                 Structure::Map { .. } => deserializer.deserialize_map(visitor),
                 _ => Err(de::Error::invalid_type(de::Unexpected::Option, &self)),
             }
@@ -259,10 +275,19 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
     where
         E: de::Error,
     {
-        if *self.structure == Structure::String {
-            Ok(NotNull(Robj::from(v)))
-        } else {
-            Err(de::Error::invalid_type(de::Unexpected::Str(v), &self))
+        match *self.structure {
+            Structure::String => Ok(NotNull(Robj::from(v))),
+            Structure::Date { format } => {
+                let days_since_epoch = parse_r_date(v, format)
+                    .map_err(|_| de::Error::invalid_value(de::Unexpected::Str(v), &self))?;
+                let mut date = Robj::from(days_since_epoch);
+                date.set_class(["Date"]).expect("Failed to set class");
+
+                // Handle date parsing here if needed
+                // For now, just return as a string
+                Ok(NotNull(date))
+            }
+            _ => Err(de::Error::invalid_type(de::Unexpected::Str(v), &self)),
         }
     }
 
@@ -299,18 +324,67 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
             Ok(NotNull(Robj::from(ints)))
         }
 
+        fn seq_to_r_vec_date<'de, A>(
+            mut seq: A,
+            format: &'static str,
+            size_hint: usize,
+        ) -> std::result::Result<Nullable<Robj>, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut ints = Vec::with_capacity(size_hint);
+            while let Some(value) = seq.next_element::<&str>()? {
+                let date = parse_r_date(value, format).map_err(|e| {
+                    de::Error::invalid_value(de::Unexpected::Str(&e.to_string()), &format)
+                })?;
+                ints.push(date);
+            }
+            let mut obj = Robj::from(ints);
+            obj.set_class(["Date"]).expect("Failed to set class");
+            Ok(NotNull(obj))
+        }
+
+        fn seq_to_r_vec_date_opt<'de, A>(
+            mut seq: A,
+            format: &'static str,
+            size_hint: usize,
+        ) -> std::result::Result<Nullable<Robj>, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut ints = Vec::with_capacity(size_hint);
+            while let Some(value) = seq.next_element::<Option<&str>>()? {
+                match value {
+                    None => ints.push(None),
+                    Some(value) => {
+                        let date = parse_r_date(value, format).map_err(|e| {
+                            de::Error::invalid_value(de::Unexpected::Str(&e.to_string()), &format)
+                        })?;
+                        ints.push(Some(date));
+                    }
+                }
+            }
+            let mut obj = Robj::from(ints);
+            obj.set_class(["Date"]).expect("Failed to set class");
+            Ok(NotNull(obj))
+        }
+
         if let Structure::Vector(element_structure) = self.structure {
-            let size_hint = seq.size_hint().unwrap_or(0);
+            let size_h = seq.size_hint().unwrap_or(0);
             match element_structure.as_ref() {
-                Structure::Integer => return seq_to_r_vec::<i32, A>(seq, size_hint),
-                Structure::Double => return seq_to_r_vec::<f64, A>(seq, size_hint),
-                Structure::Logical => return seq_to_r_vec::<bool, A>(seq, size_hint),
-                Structure::String => return seq_to_r_vec::<&str, A>(seq, size_hint),
+                Structure::Integer => return seq_to_r_vec::<i32, A>(seq, size_h),
+                Structure::Double => return seq_to_r_vec::<f64, A>(seq, size_h),
+                Structure::Logical => return seq_to_r_vec::<bool, A>(seq, size_h),
+                Structure::String => return seq_to_r_vec::<&str, A>(seq, size_h),
+                Structure::Date { format } => return seq_to_r_vec_date::<A>(seq, format, size_h),
                 Structure::Optional(element_structure) => match element_structure.as_ref() {
-                    Structure::Integer => return seq_to_r_vec::<Option<i32>, A>(seq, size_hint),
-                    Structure::Double => return seq_to_r_vec::<Option<f64>, A>(seq, size_hint),
-                    Structure::Logical => return seq_to_r_vec::<Option<bool>, A>(seq, size_hint),
-                    Structure::String => return seq_to_r_vec::<Option<&str>, A>(seq, size_hint),
+                    Structure::Integer => return seq_to_r_vec::<Option<i32>, A>(seq, size_h),
+                    Structure::Double => return seq_to_r_vec::<Option<f64>, A>(seq, size_h),
+                    Structure::Logical => return seq_to_r_vec::<Option<bool>, A>(seq, size_h),
+                    Structure::String => return seq_to_r_vec::<Option<&str>, A>(seq, size_h),
+                    Structure::Date { format } => {
+                        return seq_to_r_vec_date_opt::<A>(seq, format, size_h)
+                    }
                     _ => (),
                 },
                 _ => (),
@@ -349,15 +423,14 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
         {
             let ignore_extra_fields = *ignore_extra_fields;
 
-            let size_hint = map.size_hint().unwrap_or(0);
-
             let mut r_names = Vec::with_capacity(fields.len());
             let mut r_values = Vec::with_capacity(fields.len());
+            let mut visited_names = HashSet::new();
 
             // Process entries from the JSON map
             while let Some(key_str) = map.next_key::<&str>()? {
                 if let Some(expected_field_structure) = fields.get(key_str) {
-                    if r_names.contains(&key_str) {
+                    if visited_names.contains(&key_str) {
                         // Duplicate key found in JSON
                         return Err(de::Error::custom(format!(
                             "Duplicate key '{}' in JSON object",
@@ -373,6 +446,7 @@ impl<'de, 'a> Visitor<'de> for StructureVisitor<'a> {
 
                     r_names.push(key_str);
                     r_values.push(value_robj);
+                    visited_names.insert(key_str);
                 } else {
                     if ignore_extra_fields {
                         continue; // Ignore extra fields if specified

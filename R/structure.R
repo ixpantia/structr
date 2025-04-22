@@ -235,6 +235,26 @@ s_optional <- function(structure_definition) {
   list(type = "optional", value = structure_definition)
 }
 
+#' Define a Date Structure
+#'
+#' Creates an intermediate definition for a JSON date. This is typically used
+#' within `s_map()` to define fields that should contain date values.
+#'
+#' @param format The date format string. This should be a single string that
+#'   specifies the expected format of the date in the JSON data. The format
+#'   should be compatible with the `strftime` function in R.
+#'   For example, `"%Y-%m-%d"` for "2023-10-01".
+#'
+#' @return An intermediate list representing the date structure definition.
+#' @export
+s_date <- function(format = "%Y-%m-%d") {
+  # Basic validation
+  if (!is.character(format) || length(format) != 1) {
+    stop("`format` must be a single string.", call. = FALSE)
+  }
+  list(type = "date", value = format)
+}
+
 #' Finalize and Validate a Structure Definition
 #'
 #' Processes a structure definition created using the `s_*` helper functions

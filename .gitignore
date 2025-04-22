@@ -4,3 +4,4 @@ src/Makevars.win
 docs
 inst/doc
 .Rproj.user
+.Rhistory

@@ -50,7 +50,10 @@ test_that("Parses simple vectors correctly", {
     parse_json("[1, 2, 3]", build_structure(s_vector(s_integer()))),
     c(1L, 2L, 3L)
   )
-  expect_equal(parse_json("[]", build_structure(s_vector(s_string()))), character(0)) # Empty vector
+  expect_equal(
+    parse_json("[]", build_structure(s_vector(s_string()))),
+    character(0)
+  ) # Empty vector
   expect_equal(
     parse_json("[\"a\", \"b\"]", build_structure(s_vector(s_string()))),
     c("a", "b")
@@ -297,7 +300,10 @@ test_that("Handles optional vectors correctly", {
     c(1L, NA, 3L, NA)
   )
   expect_equal(parse_json('[1, 2, 3]', s_vec_opt_el), c(1L, 2L, 3L))
-  expect_equal(parse_json('[null, null]', s_vec_opt_el), c(NA_integer_, NA_integer_))
+  expect_equal(
+    parse_json('[null, null]', s_vec_opt_el),
+    c(NA_integer_, NA_integer_)
+  )
   expect_equal(parse_json('[]', s_vec_opt_el), integer(0))
   expect_error(parse_json('[1, "a", 3]', s_vec_opt_el)) # Wrong element type when present
 })
