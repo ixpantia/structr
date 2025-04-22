@@ -229,7 +229,7 @@ throws an informative error.</p>
 <span><span class="st">}'</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_extra_field</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in parse_json(json_extra_field, user_structure) : </span></span>
-<span><span class="co">#&gt;   Serde("unknown field `email`, expected one of `id`, `is_active`, `username`") at character 0</span></span>
+<span><span class="co">#&gt;   Serde("unknown field `email`, expected one of `is_active`, `username`, `id`") at character 0</span></span>
 <span></span>
 <span><span class="co"># Error: Invalid JSON syntax</span></span>
 <span><span class="va">json_syntax_error</span> <span class="op">&lt;-</span> <span class="st">'{ "id": 1 '</span> <span class="co"># Missing closing brace</span></span>

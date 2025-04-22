@@ -148,6 +148,7 @@ speed.</p>
 <span>  jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_object</span>, simplifyDataFrame <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>  rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_object</span><span class="op">)</span>,</span>
 <span>  RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_object</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_simple_object</span><span class="op">)</span>,</span>
 <span>  times <span class="op">=</span> <span class="va">benchmark_times_fast</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_fast</span>, check <span class="op">=</span> <span class="st">"equal"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu">print_and_plot</span><span class="op">(</span><span class="va">bm_simple_object</span>,</span>
@@ -155,11 +156,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##      expr    min      lq      mean  median     uq      max neval</span></span>
-<span><span class="co">##   structr  4.649  6.4770  8.395685  8.4410  9.678   29.726  1000</span></span>
-<span><span class="co">##  jsonlite 41.277 47.5690 54.801872 52.1870 60.027  161.010  1000</span></span>
-<span><span class="co">##     rjson 27.993 35.0455 40.290231 39.4890 43.080   91.581  1000</span></span>
-<span><span class="co">##   RJSONIO 33.081 41.1965 48.815744 45.2445 49.793 2596.534  1000</span></span></code></pre>
+<span><span class="co">##          expr    min     lq      mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr  4.899  7.454  9.192114  9.1870 10.2645   38.442  1000</span></span>
+<span><span class="co">##      jsonlite 42.399 51.025 59.962012 54.5110 63.6435 2847.625  1000</span></span>
+<span><span class="co">##         rjson 28.804 36.704 42.250469 41.1210 45.7100  110.446  1000</span></span>
+<span><span class="co">##       RJSONIO 34.715 43.596 49.035002 48.2100 53.1395  127.799  1000</span></span>
+<span><span class="co">##  RcppSimdJson 20.879 27.782 32.505742 31.2435 35.5915   66.213  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -171,6 +173,7 @@ speed.</p>
 <span>  jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_int</span><span class="op">)</span>, <span class="co"># simplify = TRUE default good here</span></span>
 <span>  rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_int</span><span class="op">)</span>,</span>
 <span>  RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_int</span><span class="op">)</span>, <span class="co"># simplify = TRUE default good here</span></span>
+<span>  RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_simple_array_int</span><span class="op">)</span>,</span>
 <span>  times <span class="op">=</span> <span class="va">benchmark_times_fast</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_fast</span>, check <span class="op">=</span> <span class="st">"equal"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -179,11 +182,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##      expr    min      lq      mean  median     uq      max neval</span></span>
-<span><span class="co">##   structr  3.807  5.8860  7.198468  7.3085  8.471   30.096  1000</span></span>
-<span><span class="co">##  jsonlite 31.959 37.0695 41.257056 40.1050 42.584   99.556  1000</span></span>
-<span><span class="co">##     rjson 31.979 36.4380 42.193361 42.3040 44.729  109.765  1000</span></span>
-<span><span class="co">##   RJSONIO 44.343 50.7700 59.598124 54.4110 57.507 3603.843  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq      mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr  3.937  5.9410  7.602014  7.6945  8.6560   29.224  1000</span></span>
+<span><span class="co">##      jsonlite 33.182 38.4470 42.046634 41.5980 43.8420  110.086  1000</span></span>
+<span><span class="co">##         rjson 32.020 38.2720 43.332645 43.7065 46.3565  125.154  1000</span></span>
+<span><span class="co">##       RJSONIO 45.365 53.2790 57.743020 57.4830 60.6785  143.798  1000</span></span>
+<span><span class="co">##  RcppSimdJson 21.360 25.9235 32.863819 29.9560 32.0050 3394.946  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_array_int-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -195,6 +199,7 @@ speed.</p>
 <span>  jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_str</span><span class="op">)</span>,</span>
 <span>  rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_str</span><span class="op">)</span>,</span>
 <span>  RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_simple_array_str</span><span class="op">)</span>,</span>
+<span>  RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_simple_array_str</span><span class="op">)</span>,</span>
 <span>  times <span class="op">=</span> <span class="va">benchmark_times_fast</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_fast</span>, check <span class="op">=</span> <span class="st">"equal"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -203,11 +208,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##      expr    min      lq      mean  median      uq      max neval</span></span>
-<span><span class="co">##   structr  4.268  5.8410  7.034094  7.0930  8.0750   27.782  1000</span></span>
-<span><span class="co">##  jsonlite 24.516 28.0275 31.663562 31.8290 33.4170   80.381  1000</span></span>
-<span><span class="co">##     rjson 28.433 32.0850 37.249660 37.7850 40.4955  111.187  1000</span></span>
-<span><span class="co">##   RJSONIO 38.883 43.0300 51.376313 47.8845 51.1305 3121.624  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq      mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr  4.168  6.1820  7.447508  7.5695  8.5610   27.592  1000</span></span>
+<span><span class="co">##      jsonlite 25.678 30.7525 33.796142 33.7730 35.7420   75.942  1000</span></span>
+<span><span class="co">##         rjson 29.916 36.0470 39.912853 40.1700 42.6600  123.561  1000</span></span>
+<span><span class="co">##       RJSONIO 40.135 48.1550 52.213798 51.9475 54.7625  153.215  1000</span></span>
+<span><span class="co">##  RcppSimdJson 21.350 26.3035 33.103361 29.8655 32.0300 3300.308  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_array_str-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -220,6 +226,7 @@ speed.</p>
 <span>    jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_nested_object</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>    rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_nested_object</span><span class="op">)</span>,</span>
 <span>    RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_nested_object</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="co"># avoid matrix/df conversion</span></span>
+<span>    RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_nested_object</span><span class="op">)</span>,</span>
 <span>    times <span class="op">=</span> <span class="va">benchmark_times_fast</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_fast</span>, check <span class="op">=</span> <span class="cn">NULL</span> <span class="co"># Disable check due to potential minor diffs</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
@@ -228,11 +235,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##      expr    min      lq     mean  median     uq      max neval</span></span>
-<span><span class="co">##   structr 16.341 21.2650 24.43637 24.3905 26.349   73.718  1000</span></span>
-<span><span class="co">##  jsonlite 25.708 32.3155 36.77939 36.5680 38.912   73.006  1000</span></span>
-<span><span class="co">##     rjson 40.366 48.2750 54.99315 54.4270 57.833  117.209  1000</span></span>
-<span><span class="co">##   RJSONIO 53.760 61.6045 70.49977 65.7575 69.961 2861.799  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq     mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr 17.182 22.6925 25.59093 25.8335 27.6420   65.082  1000</span></span>
+<span><span class="co">##      jsonlite 26.309 33.3825 37.42539 37.1945 39.7240   74.660  1000</span></span>
+<span><span class="co">##         rjson 41.637 50.4490 59.35239 56.2650 60.1375 3142.535  1000</span></span>
+<span><span class="co">##       RJSONIO 54.912 64.5860 70.49367 69.6800 74.1590  182.951  1000</span></span>
+<span><span class="co">##  RcppSimdJson 28.844 36.5985 42.21154 42.6845 45.8955  131.105  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_nested_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -245,18 +253,20 @@ speed.</p>
 <span>    jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_array_of_objects</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span>, simplifyDataFrame <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="co"># Force list output</span></span>
 <span>    rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_array_of_objects</span><span class="op">)</span>,</span>
 <span>    RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_array_of_objects</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="co"># Results in list of lists</span></span>
-<span>    times <span class="op">=</span> <span class="va">benchmark_times_medium</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>, check <span class="op">=</span> <span class="st">"equal"</span></span>
+<span>    RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_array_of_objects</span><span class="op">)</span>,</span>
+<span>    times <span class="op">=</span> <span class="va">benchmark_times_medium</span>, unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>, check <span class="op">=</span> <span class="cn">NULL</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="fu">print_and_plot</span><span class="op">(</span><span class="va">bm_array_of_objects</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Scenario 5: Array of 100 Objects Parsing Time"</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##      expr      min        lq      mean    median        uq      max neval</span></span>
-<span><span class="co">##   structr 0.175087 0.2106885 0.2419952 0.2253005 0.2386860 3.409662   500</span></span>
-<span><span class="co">##  jsonlite 0.120685 0.1495185 0.1538387 0.1557910 0.1615565 0.246229   500</span></span>
-<span><span class="co">##     rjson 0.161752 0.1772310 0.1921014 0.1957400 0.2037255 0.339450   500</span></span>
-<span><span class="co">##   RJSONIO 0.246229 0.2596740 0.2775724 0.2684360 0.2809540 3.453713   500</span></span></code></pre>
+<span><span class="co">##          expr      min        lq       mean    median        uq      max neval</span></span>
+<span><span class="co">##       structr 0.190395 0.2228010 0.23824712 0.2333955 0.2468710 1.950821   500</span></span>
+<span><span class="co">##      jsonlite 0.119553 0.1506865 0.16896090 0.1581960 0.1632040 3.612822   500</span></span>
+<span><span class="co">##         rjson 0.163185 0.1785780 0.19213523 0.1903455 0.2051480 0.273982   500</span></span>
+<span><span class="co">##       RJSONIO 0.246510 0.2670930 0.27798624 0.2745125 0.2857430 0.444159   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.054793 0.0670700 0.08055183 0.0769390 0.0937795 0.157353   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_array_of_objects-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -269,9 +279,10 @@ speed.</p>
 <span>    jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_of_objects</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span>, simplifyDataFrame <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>    rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_of_objects</span><span class="op">)</span>,</span>
 <span>    RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_of_objects</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>    RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_large_array_of_objects</span><span class="op">)</span>,</span>
 <span>    times <span class="op">=</span> <span class="va">benchmark_times_medium</span>,</span>
 <span>    unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>,</span>
-<span>    check <span class="op">=</span> <span class="st">"equal"</span> <span class="co"># Disable check</span></span>
+<span>    check <span class="op">=</span> <span class="cn">NULL</span> <span class="co"># Disable check</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu">print_and_plot</span><span class="op">(</span><span class="va">bm_large_array_of_objects</span>,</span>
@@ -279,11 +290,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##      expr      min       lq     mean   median       uq       max neval</span></span>
-<span><span class="co">##   structr 1.947503 2.250394 2.386582 2.319848 2.443223  6.454091   500</span></span>
-<span><span class="co">##  jsonlite 1.368383 1.397242 1.493211 1.420866 1.529540  5.536219   500</span></span>
-<span><span class="co">##     rjson 1.331274 1.378527 1.570004 1.410121 1.577103 10.269069   500</span></span>
-<span><span class="co">##   RJSONIO 2.008166 2.141761 2.249032 2.157755 2.331380  5.964568   500</span></span></code></pre>
+<span><span class="co">##          expr      min       lq      mean   median        uq       max neval</span></span>
+<span><span class="co">##       structr 2.152086 2.398340 2.6086492 2.511277 2.6441995 11.037206   500</span></span>
+<span><span class="co">##      jsonlite 1.381969 1.425505 1.5358536 1.461287 1.5505235  7.065805   500</span></span>
+<span><span class="co">##         rjson 1.360268 1.407532 1.5863846 1.440888 1.5403140 13.555296   500</span></span>
+<span><span class="co">##       RJSONIO 2.017324 2.187096 2.2980437 2.207324 2.2838425  8.475857   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.330447 0.353275 0.4157574 0.375155 0.4127005  0.699966   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_of_objects-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -296,6 +308,7 @@ speed.</p>
 <span>    jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_int</span><span class="op">)</span>,</span>
 <span>    rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_int</span><span class="op">)</span>,</span>
 <span>    RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_int</span><span class="op">)</span>,</span>
+<span>    RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_large_array_int</span><span class="op">)</span>,</span>
 <span>    times <span class="op">=</span> <span class="va">benchmark_times_medium</span>,</span>
 <span>    unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>,</span>
 <span>    check <span class="op">=</span> <span class="st">"equal"</span></span>
@@ -305,11 +318,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##      expr      min       lq      mean   median       uq      max neval</span></span>
-<span><span class="co">##   structr 0.188993 0.193987 0.2085216 0.201326 0.222776 0.338812   500</span></span>
-<span><span class="co">##  jsonlite 2.470499 2.627267 2.7925804 2.694943 2.764498 9.652027   500</span></span>
-<span><span class="co">##     rjson 1.046262 1.067902 1.1576628 1.083326 1.108593 4.726378   500</span></span>
-<span><span class="co">##   RJSONIO 2.505254 2.540329 2.6257726 2.554791 2.577640 6.954906   500</span></span></code></pre>
+<span><span class="co">##          expr      min        lq      mean    median        uq       max neval</span></span>
+<span><span class="co">##       structr 0.188091 0.1969975 0.2115499 0.2035550 0.2262920  0.345995   500</span></span>
+<span><span class="co">##      jsonlite 2.370985 2.6537825 2.8519514 2.7527370 2.8374055  7.422822   500</span></span>
+<span><span class="co">##         rjson 1.054868 1.0819940 1.2088789 1.0966115 1.1247190 12.316904   500</span></span>
+<span><span class="co">##       RJSONIO 2.555058 2.5951530 2.6592767 2.6150400 2.6493690  7.498032   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.190225 0.2030890 0.2219051 0.2122465 0.2383655  0.358719   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_int-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -322,6 +336,7 @@ speed.</p>
 <span>    jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_str</span><span class="op">)</span>,</span>
 <span>    rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_str</span><span class="op">)</span>,</span>
 <span>    RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_large_array_str</span><span class="op">)</span>,</span>
+<span>    RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_large_array_str</span><span class="op">)</span>,</span>
 <span>    times <span class="op">=</span> <span class="va">benchmark_times_medium</span>,</span>
 <span>    unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>,</span>
 <span>    check <span class="op">=</span> <span class="st">"equal"</span></span>
@@ -331,11 +346,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##      expr      min       lq      mean   median        uq       max neval</span></span>
-<span><span class="co">##   structr 0.681782 0.698719 0.7212037 0.713271 0.7383825  1.130850   500</span></span>
-<span><span class="co">##  jsonlite 2.235501 2.327653 2.4461236 2.395059 2.4672775  5.893465   500</span></span>
-<span><span class="co">##     rjson 1.345330 1.369525 1.6245735 1.400257 1.4221335 77.774182   500</span></span>
-<span><span class="co">##   RJSONIO 3.416083 3.458197 3.5595576 3.482142 3.5075890  7.231542   500</span></span></code></pre>
+<span><span class="co">##          expr      min        lq      mean   median       uq       max neval</span></span>
+<span><span class="co">##       structr 0.678697 0.6969955 0.7180350 0.707971 0.735342  0.995989   500</span></span>
+<span><span class="co">##      jsonlite 2.264105 2.4071720 2.6127171 2.523494 2.662444  7.775149   500</span></span>
+<span><span class="co">##         rjson 1.321045 1.3467430 1.4469878 1.374610 1.408038  6.642807   500</span></span>
+<span><span class="co">##       RJSONIO 3.487628 3.5259000 3.6823692 3.556998 3.595149 12.227528   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.642259 0.6629230 0.6907722 0.679768 0.711623  1.058215   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_str-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -347,6 +363,7 @@ speed.</p>
 <span>  jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_deep_nest</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span>, simplifyDataFrame <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>  rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_deep_nest</span><span class="op">)</span>,</span>
 <span>  RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_deep_nest</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_deep_nest</span><span class="op">)</span>,</span>
 <span>  times <span class="op">=</span> <span class="va">benchmark_times_fast</span>,</span>
 <span>  unit <span class="op">=</span> <span class="va">benchmark_unit_fast</span>,</span>
 <span>  check <span class="op">=</span> <span class="st">"equal"</span></span>
@@ -356,11 +373,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##      expr    min     lq     mean  median      uq      max neval</span></span>
-<span><span class="co">##   structr 12.373 14.477 16.95470 16.7310 18.1685   49.522  1000</span></span>
-<span><span class="co">##  jsonlite 16.110 18.745 25.68532 21.9960 23.6240 3429.238  1000</span></span>
-<span><span class="co">##     rjson 28.674 34.054 39.57854 39.0170 41.7680  108.823  1000</span></span>
-<span><span class="co">##   RJSONIO 36.939 42.299 48.10787 46.7225 49.6825  123.510  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq     mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr 13.345 16.5555 18.33186 18.3640 19.5865   43.411  1000</span></span>
+<span><span class="co">##      jsonlite 17.523 20.7285 23.47486 23.3840 24.9120   77.855  1000</span></span>
+<span><span class="co">##         rjson 30.557 36.3530 45.14336 41.0320 43.5510 4354.416  1000</span></span>
+<span><span class="co">##       RJSONIO 38.973 46.3265 50.49376 50.4445 53.1045  136.164  1000</span></span>
+<span><span class="co">##  RcppSimdJson 23.775 28.7590 32.25526 32.2755 34.3790   75.952  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_deep_nest-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -372,6 +390,7 @@ speed.</p>
 <span>  jsonlite <span class="op">=</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_wide_object</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span>, simplifyDataFrame <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>  rjson <span class="op">=</span> <span class="fu">rjson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rjson/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_wide_object</span><span class="op">)</span>,</span>
 <span>  RJSONIO <span class="op">=</span> <span class="fu">RJSONIO</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RJSONIO/man/fromJSON.html" class="external-link">fromJSON</a></span><span class="op">(</span><span class="va">json_wide_object</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  RcppSimdJson <span class="op">=</span> <span class="fu">RcppSimdJson</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RcppSimdJson/man/fparse.html" class="external-link">fparse</a></span><span class="op">(</span><span class="va">json_wide_object</span><span class="op">)</span>,</span>
 <span>  times <span class="op">=</span> <span class="va">benchmark_times_medium</span>,</span>
 <span>  unit <span class="op">=</span> <span class="va">benchmark_unit_medium</span>,</span>
 <span>  check <span class="op">=</span> <span class="st">"equal"</span></span>
@@ -381,11 +400,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##      expr      min        lq       mean    median        uq      max neval</span></span>
-<span><span class="co">##   structr 0.054151 0.0631580 0.06815985 0.0679215 0.0709170 0.115736   500</span></span>
-<span><span class="co">##  jsonlite 0.038833 0.0467670 0.05100620 0.0505445 0.0530540 0.095088   500</span></span>
-<span><span class="co">##     rjson 0.061755 0.0695295 0.07605581 0.0762720 0.0799195 0.164908   500</span></span>
-<span><span class="co">##   RJSONIO 0.079397 0.0868220 0.09348636 0.0919770 0.0979530 0.179446   500</span></span></code></pre>
+<span><span class="co">##          expr      min        lq       mean    median        uq      max neval</span></span>
+<span><span class="co">##       structr 0.058739 0.0690240 0.07308728 0.0729510 0.0758865 0.121968   500</span></span>
+<span><span class="co">##      jsonlite 0.038422 0.0499790 0.05396680 0.0533245 0.0563850 0.116868   500</span></span>
+<span><span class="co">##         rjson 0.062787 0.0720245 0.07843663 0.0783110 0.0826695 0.144139   500</span></span>
+<span><span class="co">##       RJSONIO 0.082985 0.0920765 0.10893664 0.0974620 0.1030120 5.324386   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.033773 0.0408665 0.04696561 0.0468020 0.0512050 0.120275   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_wide_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 </div>
