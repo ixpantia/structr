@@ -12,6 +12,10 @@ NULL
 
 parse_json_impl <- function(json_string, structure) .Call(wrap__parse_json_impl, json_string, structure)
 
+serialize_structure <- function(structure, data) .Call(wrap__serialize_structure, structure, data)
+
+serialize_structure_pretty <- function(structure, data) .Call(wrap__serialize_structure_pretty, structure, data)
+
 Structure <- new.env(parent = emptyenv())
 
 Structure$print <- function() invisible(.Call(wrap__Structure__print, self))

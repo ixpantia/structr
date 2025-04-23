@@ -1,0 +1,34 @@
+version: '3'
+
+env:
+  NOT_CRAN: true
+
+tasks:
+  clean:
+    - rm -rf src/.cargo
+    - rm -rf orbweaver_*.tar.gz
+  vendor:
+    cmds:
+      - Rscript -e "rextendr::vendor_pkgs()"
+  test:
+    deps:
+      - test-r
+  test-rust:
+    dir: src/rust
+    cmds:
+      - cargo test
+  test-r:
+    cmds:
+      - Rscript -e "devtools::test()"
+  install:
+    deps:
+     #  - document
+    cmds:
+      - Rscript -e "devtools::install()"
+  document:
+    cmds:
+      - Rscript -e "rextendr::document()"
+  build-rust:
+    dir: src/rust
+    cmds:
+      - cargo build

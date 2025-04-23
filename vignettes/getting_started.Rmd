@@ -20,132 +20,416 @@ library(structr)
 
 ## Introduction
 
-The `structr` package allows you to parse JSON strings while strictly validating them against a predefined schema or structure. This ensures that the data conforms to your expectations regarding data types (integer, double, string, logical), nesting (objects, arrays), required fields, and optional (nullable) values.
+Have you ever had trouble with data-type consistency when interacting with
+external systems like a web API or a database? It is not uncommon for JSON
+parsers in R to fail to parse and serialize data to the specification of the
+external system.
 
-The core validation logic is implemented in Rust for performance, leveraging the `serde` library, and made available in R through the `{extendr}` package.
+For example, let's say an API requires a field in a JSON object to be a single
+scalar integer value. However, you get constant `400 Bad Request` because
+packages like `jsonlite` serialize the integer as a vector of length 1. If the
+API requires a nested structure unbox values becomes very impractical.
 
-This vignette provides a brief overview of the main workflow.
+The `structr` package provides a solution to this problem by allowing you to
+define a structure for your data and then serialize and deserialize it to and
+from JSON. (With the added benefit of being blazingly fast.)
 
-## Basic Workflow
+## Defining a structure
 
-Using `structr` involves three main steps:
+Defining a structure with `structr` involves combining different data-types to build
+complex structures. These are combined through the `s_*` functions like
+`?s_map`, `?s_vector`, `?s_string` and others.
 
-1.  **Define the Schema:** Use the `s_*` functions (`s_map`, `s_vector`, `s_integer`, etc.) to describe the expected JSON structure and types. This results in an R list representing the schema.
-2.  **Build the Structure:** Pass the schema definition to `build_structure()`. This function validates your schema *definition* and prepares an optimized internal representation for parsing.
-3.  **Parse and Validate:** Use `parse_json()` with the input JSON string and the *built structure* object. If the JSON matches the structure, it returns the parsed R object (typically nested lists). If not, it throws a detailed error.
+Once the desired structure is reached it has to be compiled using the
+`?build_structure` function. The compiled version is what will be used to parse
+or serialize the structures we want.
 
-## Example 1: Simple Object
+```{r}
+structure_basic <- build_structure(
+  s_map(
+    x = s_integer(),
+    y = s_double(),
+    z = s_optional(s_string())
+  )
+)
+print(structure_basic)
+```
 
-Let's define a structure for a simple user object and parse matching JSON.
+## Parsing JSON
 
-```{r simple_object}
-# 1. Define the schema
-user_schema <- s_map(
-  id = s_integer(),
-  username = s_string(),
-  is_active = s_logical()
+We can use a structure like the one defined above to parse a JSON exactly to the specification.
+
+```{r}
+json_str <- '{"x": 1, "y": 99.9, "z": "value"}'
+
+parse_json(json_str, structure_basic)
+```
+
+You may have noticed that `z` is a combination of `?s_optional` and `?s_string`. This is because
+`structr` is non-null by default. Every field is required be default, meaning it cannot be `NULL` or `NA`.
+
+If we try parse a JSON without the field `x` we will get an error.
+
+```{r}
+json_str <- '{"y": 99.9, "z": "value"}'
+try(parse_json(json_str, structure_basic))
+
+# Using 'null' for a non-optional field also causes an error
+json_str_null <- '{"x": null, "y": 99.9, "z": "value"}'
+try(parse_json(json_str_null, structure_basic))
+```
+
+However, if we try to parse a JSON missing the *optional* field `z`, it will not fail. `s_optional` means the *value* associated with the key can be `null` or missing from the JSON object.
+
+```{r}
+json_str_missing_z <- '{"x": 1, "y": 99.9}'
+parse_json(json_str_missing_z, structure_basic)
+
+json_str_null_z <- '{"x": 1, "y": 99.9, "z": null}'
+parse_json(json_str_null_z, structure_basic)
+```
+
+We will get errors if the types are incorrect. If we pass a string to x or y we will
+get errors.
+
+```{r}
+json_str_bad_types <- '{"x": "1", "y": "99.9", "z": "value"}'
+try(parse_json(json_str_bad_types, structure_basic))
+```
+
+## Serializing JSON
+
+We can use this same structure to convert R objects into the corresponding JSON.
+`serialize_json` ensures that the R object conforms to the structure *before*
+creating the JSON string.
+
+```{r}
+r_list <- list(x = 1L, y = 99.9, z = "value")
+serialize_json(r_list, structure_basic)
+
+r_list_null_z <- list(x = 2L, y = 100.1)
+serialize_json(r_list_null_z, structure_basic)
+```
+
+If the R object doesn't match the structure (e.g., wrong type, missing required field), `serialize_json` will raise an error.
+
+```{r}
+# Wrong type for 'x'
+r_list_bad_type <- list(x = "1", y = 99.9, z = "value")
+try(serialize_json(r_list_bad_type, structure_basic))
+
+# Missing required field 'y'
+r_list_missing_field <- list(x = 1L, z = "value")
+try(serialize_json(r_list_missing_field, structure_basic))
+
+# Providing NA for a non-optional field 'y'
+r_list_na_field <- list(x = 1L, y = NA_real_, z = "value")
+try(serialize_json(r_list_na_field, structure_basic))
+```
+
+
+## More Complex Structures (Parsing)
+
+Real-world JSON, especially from APIs, often involves nested objects, arrays of objects, optional fields, and specific data types like dates. `structr` is designed to handle these complexities robustly during parsing.
+
+Let's imagine we're interacting with an e-commerce API that returns order details. A typical JSON response might look like this:
+
+```json
+{
+  "order_id": "ORD-12345",
+  "order_date": "2024-07-29",
+  "status": "processing",
+  "customer": {
+    "customer_id": 987,
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com"
+  },
+  "items": [
+    {
+      "sku": "ITEM001",
+      "product_name": "Wireless Mouse",
+      "quantity": 1,
+      "unit_price": 25.99
+    },
+    {
+      "sku": "ITEM002",
+      "product_name": "Keyboard",
+      "quantity": 1,
+      "unit_price": 75.50
+    }
+  ],
+  "shipping_address": {
+    "street": "123 Example St",
+    "city": "Metropolis",
+    "zip_code": "10001",
+    "country": "USA"
+  },
+  "notes": "Gift wrap requested."
+}
+```
+
+We can define a `structr` schema to strictly match this structure:
+
+```{r complex_schema_parse}
+# Define the schema for a single order item
+item_schema_parse <- s_map(
+  sku = s_string(),
+  product_name = s_string(),
+  quantity = s_integer(),
+  unit_price = s_double()
 )
 
-# 2. Build the structure
-user_structure <- build_structure(user_schema)
-# `user_structure` is now ready for parsing
-
-# 3. Prepare valid JSON
-valid_json <- '{
-  "id": 123,
-  "username": "testuser",
-  "is_active": true
-}'
-
-# 4. Parse and validate
-parsed_data <- parse_json(valid_json, user_structure)
-
-# Print the result
-print(parsed_data)
-
-# Check the structure of the parsed data
-str(parsed_data)
-```
-
-The output is an R list with the correct types (`integer`, `character`, `logical`).
-
-## Example 2: Nested Structures and Optional Fields
-
-Structures can be nested, and fields can be marked as optional (meaning they can accept `null`).
-
-```{r nested_optional}
-# 1. Define a schema with nesting and an optional description
-product_schema <- s_map(
-  product_id = s_string(),
-  details = s_map(
-    name = s_string(),
-    price = s_double()
-  ),
-  tags = s_vector(s_string()),
-  description = s_optional(s_string()) # Can be string or null
+# Define the schema for the customer
+customer_schema_parse <- s_map(
+  customer_id = s_integer(),
+  name = s_string(),
+  email = s_optional(s_string()) # Email might be null
 )
 
-# 2. Build the structure
-product_structure <- build_structure(product_schema)
+# Define the schema for the shipping address
+address_schema_parse <- s_map(
+  street = s_string(),
+  city = s_string(),
+  zip_code = s_string(),
+  country = s_string()
+)
 
-# 3. Parse JSON with the optional field present
-json_with_desc <- '{
-  "product_id": "XYZ-123",
-  "details": {"name": "Gadget", "price": 19.99},
-  "tags": ["tech", "new"],
-  "description": "A useful gadget"
-}'
-parsed1 <- parse_json(json_with_desc, product_structure)
-cat("Description when present:\n")
-print(parsed1$description)
+# Combine into the main order schema
+order_schema_parse <- s_map(
+  order_id = s_string(),
+  order_date = s_date(format = "%Y-%m-%d"), # Expecting specific date format
+  status = s_string(),
+  customer = customer_schema_parse,              # Nest the customer schema
+  items = s_vector(item_schema_parse),           # Expect a vector of items matching item_schema
+  shipping_address = address_schema_parse,       # Nest the address schema
+  notes = s_optional(s_string())           # Notes might be null
+)
 
-# 4. Parse JSON where the optional field is null
-json_null_desc <- '{
-  "product_id": "ABC-789",
-  "details": {"name": "Widget", "price": 9.50},
-  "tags": [],
-  "description": null
-}'
-parsed2 <- parse_json(json_null_desc, product_structure)
-cat("\nDescription when null:\n")
-print(parsed2$description)
+# Build the final structure
+compiled_order_structure_parse <- build_structure(order_schema_parse)
+
+# Print the structure (optional, for inspection)
+# print(compiled_order_structure_parse)
 ```
 
-Note that `s_optional()` means the *value* can be `null`. By default, for `s_map`, the *key* itself must still be present in the JSON, even if its value is `null`. If the key is entirely missing, `parse_json` will usually throw a "missing field" error.
+Now, let's define the JSON string in R and parse it using our compiled structure.
 
-## Handling Errors
-
-If the JSON doesn't match the structure, `parse_json()` throws an informative error.
-
-```{r errors, error=TRUE}
-# Use the simple user_structure from Example 1
-
-# Error: Type mismatch (id should be integer, not string)
-json_type_error <- '{ "id": "123", "username": "badtype", "is_active": true }'
-try(parse_json(json_type_error, user_structure))
-
-
-# Error: Missing required field (username is missing)
-json_missing_field <- '{ "id": 456, "is_active": false }'
-try(parse_json(json_missing_field, user_structure))
-
-
-# Error: Extra field (email is not defined in the schema)
-json_extra_field <- '{
-  "id": 789, "username": "extra", "is_active": true, "email": "a@b.com"
+```{r parse_complex_json}
+json_order_1 <- '{
+  "order_id": "ORD-12345",
+  "order_date": "2024-07-29",
+  "status": "processing",
+  "customer": {
+    "customer_id": 987,
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com"
+  },
+  "items": [
+    {
+      "sku": "ITEM001",
+      "product_name": "Wireless Mouse",
+      "quantity": 1,
+      "unit_price": 25.99
+    },
+    {
+      "sku": "ITEM002",
+      "product_name": "Keyboard",
+      "quantity": 1,
+      "unit_price": 75.50
+    }
+  ],
+  "shipping_address": {
+    "street": "123 Example St",
+    "city": "Metropolis",
+    "zip_code": "10001",
+    "country": "USA"
+  },
+  "notes": "Gift wrap requested."
 }'
-try(parse_json(json_extra_field, user_structure))
 
-# Error: Invalid JSON syntax
-json_syntax_error <- '{ "id": 1 ' # Missing closing brace
-try(parse_json(json_syntax_error, user_structure))
+# Parse the JSON string
+parsed_order_1 <- parse_json(json_order_1, compiled_order_structure_parse)
+
+# Inspect the parsed R object structure and types
+str(parsed_order_1, max.level = 2)
+
+# Access specific parts
+print(paste("Order Status:", parsed_order_1$status))
+print(paste("Number of items:", length(parsed_order_1$items)))
+print(paste("First item SKU:", parsed_order_1$items[[1]]$sku))
+# Notice the order_date is now an R Date object
+print(paste("Order Date:", parsed_order_1$order_date))
+class(parsed_order_1$order_date)
 ```
 
-## Next Steps
+Let's try another example where the optional fields (`email` and `notes`) are `null`:
 
-This vignette covered the basic usage of `structr`. For more details on specific functions and validation rules, consult the help pages:
+```{r parse_complex_json_nulls}
+json_order_2 <- '{
+  "order_id": "ORD-67890",
+  "order_date": "2024-07-30",
+  "status": "shipped",
+  "customer": {
+    "customer_id": 654,
+    "name": "John Smith",
+    "email": null
+  },
+  "items": [
+    {
+      "sku": "ITEM003",
+      "product_name": "USB Hub",
+      "quantity": 2,
+      "unit_price": 12.00
+    }
+  ],
+  "shipping_address": {
+    "street": "456 Test Ave",
+    "city": "Gotham",
+    "zip_code": "20002",
+    "country": "USA"
+  },
+  "notes": null
+}'
 
-*   `?parse_json`
-*   `?build_structure`
-*   `?s_map`, `?s_vector`, `?s_integer`, `?s_double`, `?s_string`, `?s_logical`, `?s_optional`, `?s_date`
+# Parse the second JSON
+parsed_order_2 <- parse_json(json_order_2, compiled_order_structure_parse)
 
+# Check the optional fields (which are NULL in R)
+print(paste("Customer Email:", parsed_order_2$customer$email))
+is.null(parsed_order_2$customer$email)
+print(paste("Order Notes:", parsed_order_2$notes))
+is.null(parsed_order_2$notes)
+```
+
+If the incoming JSON deviates from this structure (e.g., wrong type for `quantity`, missing `status`, unexpected extra field, incorrect date format), `parse_json` will raise a specific error, ensuring data integrity when working with external systems.
+
+This example demonstrates how `s_map`, `s_vector`, `s_optional`, `s_date`, and atomic types (`s_string`, `s_integer`, `s_double`) can be combined to model and validate complex, real-world JSON data during parsing.
+
+
+## More Complex Structures (Serialization)
+
+Just as `structr` helps enforce structure when parsing JSON, it's equally valuable when *creating* JSON to send to external systems, especially those with strict API requirements. This ensures your R data is correctly formatted before transmission.
+
+Let's imagine we need to send event log data to an API. This API is very particular about the format:
+
+*   It expects specific fields: `eventId`, `eventDate`, `eventType`, `userId`, `details`.
+*   `eventDate` *must* be in `YYYYMMDD` format.
+*   `userId` *must* be an integer.
+*   `details` is a nested object containing `source` (string) and `metadata` (optional map).
+*   `metadata` itself can contain `key` (string) and `value` (double), both optional within the metadata map, but if `metadata` is present, it must be an object.
+
+We can define a `structr` schema to meet these strict requirements for serialization:
+
+```{r complex_schema_serialize}
+# Schema for the optional metadata map
+metadata_schema_serialize <- s_map(
+  key = s_optional(s_string()),
+  value = s_optional(s_double())
+)
+
+# Schema for the details object
+details_schema_serialize <- s_map(
+  source = s_string(),
+  metadata = s_optional(metadata_schema_serialize) # The whole metadata map is optional
+)
+
+# Main schema for the log entry
+log_entry_schema_serialize <- s_map(
+  eventId = s_string(),
+  eventDate = s_date(format = "%Y%m%d"), # Strict date format required by API
+  eventType = s_string(),
+  userId = s_integer(),
+  details = details_schema_serialize      # Nest the details schema
+)
+
+# Build the final structure for serialization
+compiled_log_entry_structure_serialize <- build_structure(log_entry_schema_serialize)
+
+print(compiled_log_entry_structure_serialize)
+```
+
+Now, let's create some R data that we want to send to this API. It's crucial that the R data types match the schema (e.g., use `as.Date()` for `eventDate`, `integer` for `userId`).
+
+```{r prepare_complex_r_data}
+# Example 1: Log entry with full details including metadata
+log_entry_data_1 <- list(
+  eventId = "evt-aaa-001",
+  eventDate = as.Date("2024-08-15"),
+  eventType = "user_login",
+  userId = 12345L,
+  details = list(
+    source = "web_frontend",
+    metadata = list(
+      key = "session_duration",
+      value = 350.5
+    )
+  )
+)
+
+# Example 2: Log entry where metadata is missing
+log_entry_data_2 <- list(
+  eventId = "evt-bbb-002",
+  eventDate = as.Date("2024-08-16"),
+  eventType = "page_view",
+  userId = 98765L,
+  details = list(
+    source = "mobile_app"
+  )
+)
+
+# Example 3: Log entry where metadata is present, but its inner fields are NULL
+log_entry_data_3 <- list(
+  eventId = "evt-ccc-003",
+  eventDate = as.Date("2024-08-17"),
+  eventType = "item_click",
+  userId = 12345L,
+  details = list(
+    source = "web_frontend",
+    metadata = list(
+      key = NULL,
+      value = NULL
+    )
+  )
+)
+
+str(log_entry_data_1) # Check R types
+```
+
+Let's serialize these R lists using our strict structure. `serialize_json` will validate the R list against the schema before producing the JSON.
+
+```{r serialize_complex_json}
+# Serialize Example 1
+serialize_json(log_entry_data_1, compiled_log_entry_structure_serialize, pretty = TRUE)
+
+# Serialize Example 2
+serialize_json(log_entry_data_2, compiled_log_entry_structure_serialize, pretty = TRUE)
+
+# Serialize Example 3
+serialize_json(log_entry_data_3, compiled_log_entry_structure_serialize, pretty = TRUE)
+```
+
+Now, let's see what happens if our R data *doesn't* conform to the structure expected by the API schema.
+
+```{r serialize_complex_errors}
+# Error Case 1: Incorrect date type (character instead of Date)
+bad_data_date_type <- log_entry_data_1
+bad_data_date_type$eventDate <- "2024-08-15" # Should be as.Date("2024-08-15")
+try(serialize_json(bad_data_date_type, compiled_log_entry_structure_serialize))
+
+# Error Case 2: Incorrect type for userId (numeric instead of integer)
+bad_data_user_type <- log_entry_data_1
+bad_data_user_type$userId <- 12345.0 # Should be 12345L
+try(serialize_json(bad_data_user_type, compiled_log_entry_structure_serialize))
+
+# Error Case 3: Missing a required field ('eventType') in the R list
+bad_data_missing_field <- log_entry_data_1
+bad_data_missing_field$eventType <- NULL # Remove the field
+try(serialize_json(bad_data_missing_field, compiled_log_entry_structure_serialize))
+
+# Error Case 4: Providing NA for a required, non-optional field ('source')
+bad_data_na_field <- log_entry_data_1
+bad_data_na_field$details$source <- NA_character_
+try(serialize_json(bad_data_na_field, compiled_log_entry_structure_serialize))
+```
+
+These examples show how `serialize_json` uses the `structr` schema to enforce type correctness and structure *before* generating the JSON. This is critical for reliable communication with APIs that demand specific formats, preventing malformed requests and runtime errors on the server side. The use of `s_date` with a specific `format` ensures dates are serialized exactly as required.
