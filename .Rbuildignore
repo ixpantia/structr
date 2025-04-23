@@ -11,3 +11,4 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 vignettes/bench.Rmd
+^README\.Rmd$

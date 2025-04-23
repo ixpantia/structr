@@ -4,6 +4,8 @@ env:
   NOT_CRAN: true
 
 tasks:
+  render:
+    - Rscript -e "devtools::build_readme()"
   clean:
     - rm -rf src/.cargo
     - rm -rf orbweaver_*.tar.gz
