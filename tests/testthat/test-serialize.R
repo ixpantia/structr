@@ -78,7 +78,7 @@ test_that("Can serialize simple maps", {
 
   # Empty map
   empty_map_struct <- build_structure(s_map())
-  expect_equal(serialize_json(list(), empty_map_struct), "{}")
+  expect_equal(serialize_json(list(), empty_map_struct), json("{}"))
 })
 
 test_that("Can serialize nested structures", {
@@ -209,32 +209,32 @@ test_that("Can serialize dates correctly", {
   r_date <- as.Date("2024-07-16")
 
   # Simple date, default format
-  expect_equal(serialize_json(r_date, date_struct), '"2024-07-16"')
+  expect_equal(serialize_json(r_date, date_struct), json('"2024-07-16"'))
   # Simple date, custom format
-  expect_equal(serialize_json(r_date, date_struct_custom), '"07/16/2024"')
+  expect_equal(serialize_json(r_date, date_struct_custom), json('"07/16/2024"'))
   # Optional date, present
-  expect_equal(serialize_json(r_date, date_opt_struct), '"2024-07-16"')
+  expect_equal(serialize_json(r_date, date_opt_struct), json('"2024-07-16"'))
   # Optional date, NULL
   # expect_equal(serialize_json(NULL, date_opt_struct), 'null') # Need to check top-level NULL handling
   # Optional date, NA
-  expect_equal(serialize_json(as.Date(NA), date_opt_struct), 'null')
+  expect_equal(serialize_json(as.Date(NA), date_opt_struct), json('null'))
 
   # Vector of dates
   r_dates <- c(as.Date("2024-01-01"), as.Date("2024-01-02"))
   expect_equal(
     serialize_json(r_dates, date_vec_struct),
-    '["2024-01-01","2024-01-02"]'
+    json('["2024-01-01","2024-01-02"]')
   )
 
   # Vector of optional dates
   r_dates_opt <- c(as.Date("2024-01-01"), NA, as.Date("2024-01-03"))
   expect_equal(
     serialize_json(r_dates_opt, date_vec_opt_struct),
-    '["2024-01-01",null,"2024-01-03"]'
+    json('["2024-01-01",null,"2024-01-03"]')
   )
   expect_equal(
     serialize_json(c(NA_Date_, NA_Date_), date_vec_opt_struct),
-    '[null,null]'
+    json('[null,null]')
   )
 
   # Map with dates
@@ -317,13 +317,13 @@ test_that("Serialization handles empty inputs correctly", {
   vec_map_struct <- build_structure(s_vector(s_map(a = s_integer())))
 
   # Empty vector
-  expect_equal(serialize_json(integer(0), vec_int_struct), "[]")
+  expect_equal(serialize_json(integer(0), vec_int_struct), json("[]"))
 
   # Empty map
-  expect_equal(serialize_json(list(), map_struct), "{}")
+  expect_equal(serialize_json(list(), map_struct), json("{}"))
 
   # Empty vector of maps
-  expect_equal(serialize_json(list(), vec_map_struct), "[]")
+  expect_equal(serialize_json(list(), vec_map_struct), json("[]"))
 })
 
 # (End of added code)

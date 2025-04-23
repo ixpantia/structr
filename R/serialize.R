@@ -1,3 +1,10 @@
+json <- function(x) {
+  structure(
+    x,
+    class = c("json")
+  )
+}
+
 #' Serialize data to JSON
 #' @description
 #' This function serializes R data to JSON format using a specified structure.
@@ -37,12 +44,9 @@ serialize_json <- function(data, structure, pretty = FALSE) {
   if (inherits(result, "error")) {
     rlang::abort(result$value)
   }
-
-  base::structure(
-    result,
-    class = c("json")
-  )
+  json(result)
 }
+
 
 #' @export
 print.json <- function(x, ...) {
