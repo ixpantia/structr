@@ -53,157 +53,248 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="structr-fast-validating-json-parsing-for-r">structr: Fast, Validating JSON Parsing for R<a class="anchor" aria-label="anchor" href="#structr-fast-validating-json-parsing-for-r"></a>
+<div class="page-header"><h1 id="structr-fast-validating-json-parsing-and-serialization-for-r">structr: Fast, Validating JSON Parsing and Serialization for R<a class="anchor" aria-label="anchor" href="#structr-fast-validating-json-parsing-and-serialization-for-r"></a>
 </h1></div>
 <!-- badges: start -->
 
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>structr</code> provides a robust and efficient way to parse JSON data in R while strictly validating it against a user-defined schema. It ensures that incoming JSON not only conforms to expected structures (objects, arrays, nesting) but also adheres to specific data types (integer, double, string, logical, optional/nullable).</p>
-<p>The core logic is implemented in Rust using the highly performant <code>serde</code> and <code>simd_json</code> crates (accessed via <code>{extendr}</code>), offering significant speed advantages over traditional R methods, especially when validation is required.</p>
+<p><code>structr</code> is a high-performance R package designed for strict JSON parsing and serialization with schema validation. Whether you’re working with APIs, databases, or complex nested JSON, <code>structr</code> ensures that your data conforms exactly to the required structure—both when reading and writing.</p>
+<p>Powered by Rust (<code>serde</code>, <code>simd_json</code>) and exposed to R via <code>{extendr}</code>, it provides significant speed advantages over traditional R JSON tools while offering more precise control over data structure and types.</p>
 </div>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
 <ul>
 <li>
-<strong>Schema Definition:</strong> Define expected JSON structures using intuitive R functions (<code>s_map</code>, <code>s_vector</code>, <code>s_integer</code>, <code>s_double</code>, <code>s_string</code>, <code>s_logical</code>, <code>s_optional</code>).</li>
+<strong>Schema Definition in R:</strong> Use expressive R functions like <code>s_map</code>, <code>s_vector</code>, <code>s_integer</code>, <code>s_double</code>, <code>s_string</code>, <code>s_logical</code>, <code>s_optional</code>, and <code>s_date</code>.</li>
 <li>
-<strong>Strict Validation:</strong> Enforces type correctness, presence of required fields, nesting, and handles <code>null</code> values via <code>s_optional</code>. By default, extra fields in objects cause errors.</li>
+<strong>Strict Validation:</strong> Catch type mismatches, missing fields, unexpected fields, and NULLs with clear error messages.</li>
 <li>
-<strong>High Performance:</strong> Faster than base R or <code>jsonlite</code> for <em>validated</em> parsing, as validation is integrated into the Rust parsing process.</li>
+<strong>High Performance:</strong> Combines validation with parsing for efficient data ingestion.</li>
 <li>
-<strong>Informative Errors:</strong> Provides detailed messages pinpointing the location and nature of validation failures.</li>
+<strong>Bidirectional Support:</strong> Parse JSON <em>and</em> serialize R data back to JSON, validating against the same schema.</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="missing--planned-features">Missing / Planned Features<a class="anchor" aria-label="anchor" href="#missing--planned-features"></a>
+<h2 id="planned-features">Planned Features<a class="anchor" aria-label="anchor" href="#planned-features"></a>
 </h2>
 <ul>
-<li>JSON Serialization (R object -&gt; JSON string).</li>
-<li>Custom validation rules/functions.</li>
-<li>Built-in support for more complex types (e.g., dates, enums).</li>
+<li>Support for enums and more complex/custom validations.</li>
+<li>Better date/time parsing and formatting options.</li>
+<li>Clear, location-aware error messages help identify problems early.</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="performance-advantage">Performance Advantage<a class="anchor" aria-label="anchor" href="#performance-advantage"></a>
-</h2>
-<p>Unlike <code><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">jsonlite::fromJSON</a></code> which focuses on flexible parsing, <code><a href="reference/parse_json.html">structr::parse_json</a></code> <em>simultaneously</em> parses and validates against the predefined structure. This often results in significantly faster execution times when validation is a requirement, as the checks are integrated into the high-performance Rust parsing layer (<code>simd_json</code>). It avoids the overhead of parsing into a flexible R object and then validating separately.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p><strong>Prerequisites:</strong></p>
-<p>You need the Rust compiler (<code>rustc</code>) and package manager (<code>cargo</code>) installed. The easiest way is via <code>rustup</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Install rustup (interactive installer)</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Follow instructions. Ensure Rust &gt;= 1.70 (check DESCRIPTION)</span></span></code></pre></div>
-<p><strong>Install <code>structr</code>:</strong></p>
+<div class="section level3">
+<h3 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
+</h3>
+<p>You must have Rust (<code>rustc</code>, <code>cargo</code>) installed. You can install via <a href="https://rustup.rs" class="external-link">rustup</a>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div>
+<p>Make sure Rust &gt;= 1.70.</p>
+</div>
+<div class="section level3">
+<h3 id="install-from-github">Install from GitHub<a class="anchor" aria-label="anchor" href="#install-from-github"></a>
+</h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Requires 'remotes' package: install.packages("remotes")</span></span>
+<code class="sourceCode R"><span><span class="co"># Install 'remotes' if needed</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Installing package into '/tmp/RtmpbVVsxu/temp_libpath76b9a7e042934'</span></span>
+<span><span class="co">#&gt; (as 'lib' is unspecified)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ixpantia/structr"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or, once on CRAN:</span></span>
-<span><span class="co"># install.packages("structr")</span></span></code></pre></div>
+<span><span class="co">#&gt; Downloading GitHub repo ixpantia/structr@HEAD</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── R CMD build ─────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">#&gt; * checking for file ‘/tmp/RtmpBHXbXI/remotes76ffe3b33d728/ixpantia-structr-cfe71fb/DESCRIPTION’ ... OK</span></span>
+<span><span class="co">#&gt; * preparing ‘structr’:</span></span>
+<span><span class="co">#&gt; * checking DESCRIPTION meta-information ... OK</span></span>
+<span><span class="co">#&gt; * cleaning src</span></span>
+<span><span class="co">#&gt; * checking for LF line-endings in source and make files and shell scripts</span></span>
+<span><span class="co">#&gt; * checking for empty or unneeded directories</span></span>
+<span><span class="co">#&gt; * building ‘structr_0.1.0.9000.tar.gz’</span></span>
+<span><span class="co">#&gt; Installing package into '/tmp/RtmpbVVsxu/temp_libpath76b9a7e042934'</span></span>
+<span><span class="co">#&gt; (as 'lib' is unspecified)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>The workflow involves three steps:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Define Schema:</strong> Use <code>s_*</code> functions.</li>
-<li>
-<strong>Build Structure:</strong> Call <code><a href="reference/build_structure.html">build_structure()</a></code> on the schema.</li>
-<li>
-<strong>Parse &amp; Validate:</strong> Call <code><a href="reference/parse_json.html">parse_json()</a></code> with the JSON string and the built structure.</li>
-</ol>
 <div class="section level3">
-<h3 id="example-1-simple-object">Example 1: Simple Object<a class="anchor" aria-label="anchor" href="#example-1-simple-object"></a>
+<h3 id="define-a-schema">Define a Schema<a class="anchor" aria-label="anchor" href="#define-a-schema"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ixpantia/structr" class="external-link">structr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Define Schema</span></span>
-<span><span class="va">user_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  username <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  is_active <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_logical</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  y <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  z <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Build Structure</span></span>
-<span><span class="va">user_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">user_schema</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 3. Parse Valid JSON</span></span>
-<span><span class="va">valid_json</span> <span class="op">&lt;-</span> <span class="st">'{"id": 123, "username": "testuser", "is_active": true}'</span></span>
-<span><span class="va">parsed_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">valid_json</span>, <span class="va">user_structure</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed_data</span><span class="op">)</span></span>
-<span><span class="co"># Output: list(id = 123L, username = "testuser", is_active = TRUE)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">parsed_data</span><span class="op">)</span></span>
-<span><span class="co"># Output: Shows correct R types (integer, character, logical)</span></span></code></pre></div>
+<span><span class="va">compiled</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">schema</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="example-2-nesting-and-optional-fields">Example 2: Nesting and Optional Fields<a class="anchor" aria-label="anchor" href="#example-2-nesting-and-optional-fields"></a>
+<h3 id="parse-json">Parse JSON<a class="anchor" aria-label="anchor" href="#parse-json"></a>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Define Schema</span></span>
-<span><span class="va">product_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
-<span>  product_id <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  details <span class="op">=</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>, price <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  description <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># Can be string or null</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 2. Build Structure</span></span>
-<span><span class="va">product_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">product_schema</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 3. Parse JSON (description present)</span></span>
-<span><span class="va">json_with_desc</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "product_id": "XYZ-123",</span></span>
-<span><span class="st">  "details": {"name": "Gadget", "price": 19.99},</span></span>
-<span><span class="st">  "description": "A useful gadget"</span></span>
-<span><span class="st">}'</span></span>
-<span><span class="va">parsed1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_with_desc</span>, <span class="va">product_structure</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed1</span><span class="op">$</span><span class="va">description</span><span class="op">)</span></span>
-<span><span class="co"># Output: [1] "A useful gadget"</span></span>
-<span></span>
-<span><span class="co"># 4. Parse JSON (description is null)</span></span>
-<span><span class="va">json_null_desc</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "product_id": "ABC-789",</span></span>
-<span><span class="st">  "details": {"name": "Widget", "price": 9.50},</span></span>
-<span><span class="st">  "description": null</span></span>
-<span><span class="st">}'</span></span>
-<span><span class="va">parsed2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_null_desc</span>, <span class="va">product_structure</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed2</span><span class="op">$</span><span class="va">description</span><span class="op">)</span></span>
-<span><span class="co"># Output: NULL</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">json</span> <span class="op">&lt;-</span> <span class="st">'{"x": 1, "y": 99.9, "z": "value"}'</span></span>
+<span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json</span>, <span class="va">compiled</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $x</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $y</span></span>
+<span><span class="co">#&gt; [1] 99.9</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $z</span></span>
+<span><span class="co">#&gt; [1] "value"</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="example-3-validation-error">Example 3: Validation Error<a class="anchor" aria-label="anchor" href="#example-3-validation-error"></a>
+<h3 id="serialize-json">Serialize JSON<a class="anchor" aria-label="anchor" href="#serialize-json"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Using user_structure from Example 1</span></span>
-<span></span>
-<span><span class="co"># Type mismatch: id should be integer, not string</span></span>
-<span><span class="va">json_type_error</span> <span class="op">&lt;-</span> <span class="st">'{ "id": "123", "username": "badtype", "is_active": true }'</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_type_error</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co"># Output: Error: invalid type: string "123", expected an integer at line 1 column 13</span></span>
-<span></span>
-<span><span class="co"># Missing field: is_active is required</span></span>
-<span><span class="va">json_missing_field</span> <span class="op">&lt;-</span> <span class="st">'{ "id": 456, "username": "incomplete" }'</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_missing_field</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co"># Output: Error: missing field `is_active`</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">r_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>, y <span class="op">=</span> <span class="fl">99.9</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_data</span>, <span class="va">compiled</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "y": 99.9,</span></span>
+<span><span class="co">#&gt;   "x": 1,</span></span>
+<span><span class="co">#&gt;   "z": "value"</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
+</div>
+<div class="section level2">
+<h2 id="error-handling">Error Handling<a class="anchor" aria-label="anchor" href="#error-handling"></a>
+</h2>
+<p>Invalid input raises clear, structured errors:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bad_data</span> <span class="op">&lt;-</span> <span class="st">'{"x": "not-an-int", "y": 10.5, "z": "ok"}'</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">bad_data</span>, <span class="va">compiled</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in parse_json(bad_data, compiled) : ExpectedSigned at character 0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="handling-optional-and-missing-fields">Handling Optional and Missing Fields<a class="anchor" aria-label="anchor" href="#handling-optional-and-missing-fields"></a>
+</h2>
+<p>All fields are required by default. Use <code><a href="reference/s_optional.html">s_optional()</a></code> to allow null or missing values.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="st">'{"x": 1, "y": 99.9}'</span>, <span class="va">compiled</span><span class="op">)</span> <span class="co"># OK</span></span>
+<span><span class="co">#&gt; $x</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $y</span></span>
+<span><span class="co">#&gt; [1] 99.9</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="st">'{"x": null, "y": 99.9}'</span>, <span class="va">compiled</span><span class="op">)</span><span class="op">)</span> <span class="co"># Error</span></span>
+<span><span class="co">#&gt; Error in parse_json("{\"x\": null, \"y\": 99.9}", compiled) : </span></span>
+<span><span class="co">#&gt;   ExpectedSigned at character 0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="advanced-example-nested-and-complex-structures">Advanced Example: Nested and Complex Structures<a class="anchor" aria-label="anchor" href="#advanced-example-nested-and-complex-structures"></a>
+</h2>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">order_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  order_id <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  order_date <span class="op">=</span> <span class="fu"><a href="reference/s_date.html">s_date</a></span><span class="op">(</span>format <span class="op">=</span> <span class="st">"%Y-%m-%d"</span><span class="op">)</span>,</span>
+<span>  customer <span class="op">=</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>    customer_id <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    email <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  items <span class="op">=</span> <span class="fu"><a href="reference/s_vector.html">s_vector</a></span><span class="op">(</span><span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>    sku <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    product_name <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    quantity <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    unit_price <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span><span class="op">)</span>,</span>
+<span>  shipping_address <span class="op">=</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>    street <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    city <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    zip_code <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    country <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  notes <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">compiled_order</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">order_schema</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Parse or serialize safely</span></span>
+<span><span class="va">order_json</span> <span class="op">&lt;-</span> <span class="st">'{"order_id":"ORD-1","order_date":"2024-01-01","customer":{"customer_id":1,"name":"Alice"},"items":[],"shipping_address":{"street":"1 Main","city":"City","zip_code":"00000","country":"USA"}}'</span></span>
+<span><span class="va">parsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">order_json</span>, <span class="va">compiled_order</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">parsed</span>, <span class="va">compiled_order</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "shipping_address": {</span></span>
+<span><span class="co">#&gt;     "country": "USA",</span></span>
+<span><span class="co">#&gt;     "street": "1 Main",</span></span>
+<span><span class="co">#&gt;     "city": "City",</span></span>
+<span><span class="co">#&gt;     "zip_code": "00000"</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "order_id": "ORD-1",</span></span>
+<span><span class="co">#&gt;   "customer": {</span></span>
+<span><span class="co">#&gt;     "email": null,</span></span>
+<span><span class="co">#&gt;     "name": "Alice",</span></span>
+<span><span class="co">#&gt;     "customer_id": 1</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "order_date": "2024-01-01",</span></span>
+<span><span class="co">#&gt;   "items": [],</span></span>
+<span><span class="co">#&gt;   "notes": null</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="strict-serialization-example">Strict Serialization Example<a class="anchor" aria-label="anchor" href="#strict-serialization-example"></a>
+</h2>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">log_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="reference/s_date.html">s_date</a></span><span class="op">(</span><span class="st">"%Y%m%d"</span><span class="op">)</span>,</span>
+<span>  eventType <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    metadata <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>      key <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      value <span class="op">=</span> <span class="fu"><a href="reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">compiled_log</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">log_schema</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">r_log</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="st">"evt-001"</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-08-01"</span><span class="op">)</span>,</span>
+<span>  eventType <span class="op">=</span> <span class="st">"login"</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fl">123L</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="st">"web"</span>,</span>
+<span>    metadata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>key <span class="op">=</span> <span class="st">"duration"</span>, value <span class="op">=</span> <span class="fl">320.5</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_log</span>, <span class="va">compiled_log</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "eventDate": "20240801",</span></span>
+<span><span class="co">#&gt;   "eventType": "login",</span></span>
+<span><span class="co">#&gt;   "details": {</span></span>
+<span><span class="co">#&gt;     "metadata": {</span></span>
+<span><span class="co">#&gt;       "value": 320.5,</span></span>
+<span><span class="co">#&gt;       "key": "duration"</span></span>
+<span><span class="co">#&gt;     },</span></span>
+<span><span class="co">#&gt;     "source": "web"</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-001",</span></span>
+<span><span class="co">#&gt;   "userId": 123</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>MIT License. See <a href="LICENSE.html">LICENSE</a> file.</p>
+<p>MIT License. See <a href="LICENSE.html">LICENSE</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<p>Bug reports and contributions are welcome! Please submit issues or pull requests on <a href="https://github.com/ixpantia/structr" class="external-link">GitHub</a>.</p>
+<p>Please file issues or submit PRs at <a href="https://github.com/ixpantia/structr" class="external-link uri">https://github.com/ixpantia/structr</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a>
