@@ -108,17 +108,17 @@ will be used to parse or serialize the structures we want.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">structure_basic</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Map {</span></span>
 <span><span class="co">#&gt;     fields: {</span></span>
+<span><span class="co">#&gt;         "x": Integer,</span></span>
+<span><span class="co">#&gt;         "y": Double,</span></span>
 <span><span class="co">#&gt;         "z": Optional(</span></span>
 <span><span class="co">#&gt;             String,</span></span>
 <span><span class="co">#&gt;         ),</span></span>
-<span><span class="co">#&gt;         "x": Integer,</span></span>
-<span><span class="co">#&gt;         "y": Double,</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     ignore_extra_fields: false,</span></span>
 <span><span class="co">#&gt;     expected_fields_str: [</span></span>
-<span><span class="co">#&gt;         "z",</span></span>
 <span><span class="co">#&gt;         "x",</span></span>
 <span><span class="co">#&gt;         "y",</span></span>
+<span><span class="co">#&gt;         "z",</span></span>
 <span><span class="co">#&gt;     ],</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
@@ -197,11 +197,11 @@ string.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>, y <span class="op">=</span> <span class="fl">99.9</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
-<span><span class="co">#&gt; {"z":"value","x":1,"y":99.9}</span></span>
+<span><span class="co">#&gt; {"x":1,"y":99.9,"z":"value"}</span></span>
 <span></span>
 <span><span class="va">r_list_null_z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">2L</span>, y <span class="op">=</span> <span class="fl">100.1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list_null_z</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
-<span><span class="co">#&gt; {"z":null,"x":2,"y":100.1}</span></span></code></pre></div>
+<span><span class="co">#&gt; {"x":2,"y":100.1,"z":null}</span></span></code></pre></div>
 <p>If the R object doesn’t match the structure (e.g., wrong type,
 missing required field), <code>serialize_json</code> will raise an
 error.</p>
@@ -486,11 +486,9 @@ requirements for serialization:</p>
 <span><span class="co">#&gt; Map {</span></span>
 <span><span class="co">#&gt;     fields: {</span></span>
 <span><span class="co">#&gt;         "userId": Integer,</span></span>
-<span><span class="co">#&gt;         "eventType": String,</span></span>
 <span><span class="co">#&gt;         "eventDate": Date {</span></span>
 <span><span class="co">#&gt;             format: "%Y%m%d",</span></span>
 <span><span class="co">#&gt;         },</span></span>
-<span><span class="co">#&gt;         "eventId": String,</span></span>
 <span><span class="co">#&gt;         "details": Map {</span></span>
 <span><span class="co">#&gt;             fields: {</span></span>
 <span><span class="co">#&gt;                 "source": String,</span></span>
@@ -518,14 +516,16 @@ requirements for serialization:</p>
 <span><span class="co">#&gt;                 "metadata",</span></span>
 <span><span class="co">#&gt;             ],</span></span>
 <span><span class="co">#&gt;         },</span></span>
+<span><span class="co">#&gt;         "eventType": String,</span></span>
+<span><span class="co">#&gt;         "eventId": String,</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     ignore_extra_fields: false,</span></span>
 <span><span class="co">#&gt;     expected_fields_str: [</span></span>
 <span><span class="co">#&gt;         "userId",</span></span>
-<span><span class="co">#&gt;         "eventType",</span></span>
 <span><span class="co">#&gt;         "eventDate",</span></span>
-<span><span class="co">#&gt;         "eventId",</span></span>
 <span><span class="co">#&gt;         "details",</span></span>
+<span><span class="co">#&gt;         "eventType",</span></span>
+<span><span class="co">#&gt;         "eventId",</span></span>
 <span><span class="co">#&gt;     ],</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 <p>Now, let’s create some R data that we want to send to this API. It’s
@@ -593,45 +593,45 @@ before producing the JSON.</p>
 <span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_1</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "userId": 12345,</span></span>
-<span><span class="co">#&gt;   "eventType": "user_login",</span></span>
 <span><span class="co">#&gt;   "eventDate": "20240815",</span></span>
-<span><span class="co">#&gt;   "eventId": "evt-aaa-001",</span></span>
 <span><span class="co">#&gt;   "details": {</span></span>
 <span><span class="co">#&gt;     "source": "web_frontend",</span></span>
 <span><span class="co">#&gt;     "metadata": {</span></span>
 <span><span class="co">#&gt;       "value": 350.5,</span></span>
 <span><span class="co">#&gt;       "key": "session_duration"</span></span>
 <span><span class="co">#&gt;     }</span></span>
-<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventType": "user_login",</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-aaa-001"</span></span>
 <span><span class="co">#&gt; }</span></span>
 <span></span>
 <span><span class="co"># Serialize Example 2</span></span>
 <span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_2</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "userId": 98765,</span></span>
-<span><span class="co">#&gt;   "eventType": "page_view",</span></span>
 <span><span class="co">#&gt;   "eventDate": "20240816",</span></span>
-<span><span class="co">#&gt;   "eventId": "evt-bbb-002",</span></span>
 <span><span class="co">#&gt;   "details": {</span></span>
 <span><span class="co">#&gt;     "source": "mobile_app",</span></span>
 <span><span class="co">#&gt;     "metadata": null</span></span>
-<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventType": "page_view",</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-bbb-002"</span></span>
 <span><span class="co">#&gt; }</span></span>
 <span></span>
 <span><span class="co"># Serialize Example 3</span></span>
 <span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_3</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "userId": 12345,</span></span>
-<span><span class="co">#&gt;   "eventType": "item_click",</span></span>
 <span><span class="co">#&gt;   "eventDate": "20240817",</span></span>
-<span><span class="co">#&gt;   "eventId": "evt-ccc-003",</span></span>
 <span><span class="co">#&gt;   "details": {</span></span>
 <span><span class="co">#&gt;     "source": "web_frontend",</span></span>
 <span><span class="co">#&gt;     "metadata": {</span></span>
 <span><span class="co">#&gt;       "value": null,</span></span>
 <span><span class="co">#&gt;       "key": null</span></span>
 <span><span class="co">#&gt;     }</span></span>
-<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventType": "item_click",</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-ccc-003"</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 <p>Now, let’s see what happens if our R data <em>doesn’t</em> conform to
 the structure expected by the API schema.</p>

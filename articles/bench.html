@@ -161,11 +161,11 @@ speed.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
 <span><span class="co">##          expr    min      lq      mean  median      uq      max neval</span></span>
-<span><span class="co">##       structr  4.679  7.2290  9.185406  9.3575 10.6000   34.485  1000</span></span>
-<span><span class="co">##      jsonlite 41.588 49.8030 59.042044 53.5800 62.6970 2606.850  1000</span></span>
-<span><span class="co">##         rjson 27.562 36.3830 42.243946 40.9815 45.7250  106.017  1000</span></span>
-<span><span class="co">##       RJSONIO 33.673 43.2605 48.998554 47.7945 53.3245  122.889  1000</span></span>
-<span><span class="co">##  RcppSimdJson 21.029 27.5565 32.078184 30.9330 34.8400   65.302  1000</span></span></code></pre>
+<span><span class="co">##       structr  4.698  7.3180  9.256839  9.3575 10.5345   42.139  1000</span></span>
+<span><span class="co">##      jsonlite 41.658 49.8630 56.571854 53.1990 62.7470  134.792  1000</span></span>
+<span><span class="co">##         rjson 27.752 36.1070 44.893864 40.9360 45.5255 2759.507  1000</span></span>
+<span><span class="co">##       RJSONIO 33.923 42.7745 48.405070 47.2935 52.2120  120.584  1000</span></span>
+<span><span class="co">##  RcppSimdJson 20.859 27.6070 31.801147 30.7975 33.9635   83.676  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -186,12 +186,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##          expr    min     lq      mean  median      uq      max neval</span></span>
-<span><span class="co">##       structr  3.707  6.071  7.674124  7.9100  8.8265   35.096  1000</span></span>
-<span><span class="co">##      jsonlite 32.641 37.976 42.110548 41.3220 43.9120   97.963  1000</span></span>
-<span><span class="co">##         rjson 31.549 37.916 43.239847 43.1205 45.8855  118.150  1000</span></span>
-<span><span class="co">##       RJSONIO 44.954 52.919 58.109580 56.7960 60.1620  135.032  1000</span></span>
-<span><span class="co">##  RcppSimdJson 21.169 26.239 33.150433 30.0810 32.3255 3014.310  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq      mean  median      uq      max neval</span></span>
+<span><span class="co">##       structr  3.847  6.0410  7.711841  7.9445  8.9670   30.316  1000</span></span>
+<span><span class="co">##      jsonlite 32.481 38.0660 41.943541 41.5775 44.0070   94.826  1000</span></span>
+<span><span class="co">##         rjson 32.410 37.8505 43.138926 43.4510 46.3065  139.109  1000</span></span>
+<span><span class="co">##       RJSONIO 44.874 53.3295 57.747802 57.2065 60.4025  150.531  1000</span></span>
+<span><span class="co">##  RcppSimdJson 21.269 26.0690 33.347010 30.2520 32.7010 3604.793  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_array_int-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -212,12 +212,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_fast</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
-<span><span class="co">##          expr    min      lq      mean  median      uq      max neval</span></span>
-<span><span class="co">##       structr  4.328  6.2165  7.601076  7.8945  8.7765   29.926  1000</span></span>
-<span><span class="co">##      jsonlite 25.588 30.2915 33.678626 33.8585 35.7920   73.176  1000</span></span>
-<span><span class="co">##         rjson 29.405 35.6165 39.996179 40.2200 42.7495  100.908  1000</span></span>
-<span><span class="co">##       RJSONIO 40.707 47.8640 52.298756 51.9970 54.9780  138.007  1000</span></span>
-<span><span class="co">##  RcppSimdJson 21.691 26.4790 32.942518 30.0110 32.0850 3141.467  1000</span></span></code></pre>
+<span><span class="co">##          expr    min      lq      mean  median     uq      max neval</span></span>
+<span><span class="co">##       structr  4.248  6.1410  7.561703  7.7540  8.641   30.326  1000</span></span>
+<span><span class="co">##      jsonlite 25.388 30.0255 33.230057 33.2220 35.251   88.445  1000</span></span>
+<span><span class="co">##         rjson 29.475 35.4760 39.751817 39.7645 42.379  132.897  1000</span></span>
+<span><span class="co">##       RJSONIO 40.896 47.7545 51.535413 51.2760 54.221  168.193  1000</span></span>
+<span><span class="co">##  RcppSimdJson 21.350 25.9085 32.873964 29.8355 32.100 3346.923  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_simple_array_str-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -240,11 +240,11 @@ speed.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
 <span><span class="co">##          expr    min      lq     mean  median      uq      max neval</span></span>
-<span><span class="co">##       structr 18.054 23.0430 26.31756 26.4145 28.5035   77.124  1000</span></span>
-<span><span class="co">##      jsonlite 26.630 33.4530 40.79344 37.5300 40.5410 2924.223  1000</span></span>
-<span><span class="co">##         rjson 40.244 51.0155 56.80037 56.9410 60.6375  123.581  1000</span></span>
-<span><span class="co">##       RJSONIO 55.374 64.9860 72.06123 70.4760 74.9750  194.210  1000</span></span>
-<span><span class="co">##  RcppSimdJson 29.315 37.1600 42.98127 43.3760 46.4865  134.621  1000</span></span></code></pre>
+<span><span class="co">##       structr 17.402 22.2415 25.67400 25.6175 27.7370   77.064  1000</span></span>
+<span><span class="co">##      jsonlite 26.640 33.0520 40.35122 36.9845 39.3990 2895.631  1000</span></span>
+<span><span class="co">##         rjson 40.756 50.5495 56.49097 56.1500 59.8870  129.882  1000</span></span>
+<span><span class="co">##       RJSONIO 53.791 63.1375 69.49026 68.1775 72.4455  180.036  1000</span></span>
+<span><span class="co">##  RcppSimdJson 28.183 36.3780 42.12792 42.6395 45.5055  142.045  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_nested_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -265,12 +265,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##          expr      min        lq       mean    median       uq      max neval</span></span>
-<span><span class="co">##       structr 0.173413 0.2076675 0.22660718 0.2195090 0.235750 1.669873   500</span></span>
-<span><span class="co">##      jsonlite 0.121907 0.1530400 0.17192715 0.1610405 0.168169 3.612646   500</span></span>
-<span><span class="co">##         rjson 0.163805 0.1789845 0.19622029 0.1929700 0.209130 0.341417   500</span></span>
-<span><span class="co">##       RJSONIO 0.250788 0.2683605 0.28117067 0.2772170 0.288478 0.470077   500</span></span>
-<span><span class="co">##  RcppSimdJson 0.055343 0.0673505 0.08241493 0.0777200 0.096109 0.139921   500</span></span></code></pre>
+<span><span class="co">##          expr      min        lq       mean    median        uq      max neval</span></span>
+<span><span class="co">##       structr 0.171230 0.2144100 0.22876953 0.2237425 0.2383700 1.800418   500</span></span>
+<span><span class="co">##      jsonlite 0.122930 0.1528355 0.17053988 0.1593525 0.1645720 3.456418   500</span></span>
+<span><span class="co">##         rjson 0.161791 0.1765790 0.19106453 0.1879955 0.2042960 0.253563   500</span></span>
+<span><span class="co">##       RJSONIO 0.245959 0.2648645 0.27522247 0.2722280 0.2830225 0.458436   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.054772 0.0670500 0.07984265 0.0756910 0.0927830 0.163876   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_array_of_objects-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -294,12 +294,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##          expr      min       lq      mean    median       uq       max neval</span></span>
-<span><span class="co">##       structr 2.016449 2.221427 2.4370929 2.3297390 2.450343 13.778721   500</span></span>
-<span><span class="co">##      jsonlite 1.248498 1.429290 1.5153915 1.4536855 1.533209  6.514076   500</span></span>
-<span><span class="co">##         rjson 1.360336 1.399169 1.5595313 1.4290490 1.546374  6.906707   500</span></span>
-<span><span class="co">##       RJSONIO 2.000790 2.164515 2.2761202 2.1868370 2.257129  7.819921   500</span></span>
-<span><span class="co">##  RcppSimdJson 0.336408 0.357256 0.4256722 0.3737065 0.401889  5.326161   500</span></span></code></pre>
+<span><span class="co">##          expr      min       lq      mean   median       uq       max neval</span></span>
+<span><span class="co">##       structr 2.086121 2.289942 2.5512276 2.425238 2.584872 14.022816   500</span></span>
+<span><span class="co">##      jsonlite 1.423055 1.458395 1.5624584 1.486242 1.580453  6.976062   500</span></span>
+<span><span class="co">##         rjson 1.334108 1.390729 1.5714667 1.419704 1.544296  8.074190   500</span></span>
+<span><span class="co">##       RJSONIO 2.013996 2.181008 2.2585656 2.201075 2.274758  5.932686   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.335646 0.356084 0.4190686 0.375841 0.414323  0.883177   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_of_objects-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -322,12 +322,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##          expr      min        lq      mean   median        uq       max neval</span></span>
-<span><span class="co">##       structr 0.186288 0.1946125 0.2088062 0.200719 0.2226700  0.339684   500</span></span>
-<span><span class="co">##      jsonlite 2.258431 2.6164440 2.7717924 2.691222 2.7941350  7.318526   500</span></span>
-<span><span class="co">##         rjson 1.045199 1.0655670 1.1548414 1.079763 1.1064025 10.940729   500</span></span>
-<span><span class="co">##       RJSONIO 2.527622 2.5627985 2.6744144 2.579905 2.6039900  7.647779   500</span></span>
-<span><span class="co">##  RcppSimdJson 0.189503 0.2040210 0.2213945 0.212947 0.2388355  0.402901   500</span></span></code></pre>
+<span><span class="co">##          expr      min       lq      mean   median        uq       max neval</span></span>
+<span><span class="co">##       structr 0.185997 0.194157 0.2106096 0.204332 0.2231165  0.329785   500</span></span>
+<span><span class="co">##      jsonlite 2.281285 2.648745 2.8315660 2.726360 2.8397815  7.605797   500</span></span>
+<span><span class="co">##         rjson 1.046432 1.066715 1.1640075 1.088295 1.1114280 12.109588   500</span></span>
+<span><span class="co">##       RJSONIO 2.535599 2.576726 2.6958989 2.595681 2.6249510  7.532319   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.190896 0.203731 0.2251118 0.216093 0.2417710  0.385359   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_int-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -350,12 +350,12 @@ speed.</p>
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Time ("</span>, <span class="va">benchmark_unit_medium</span>, <span class="st">", log scale)"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
-<span><span class="co">##          expr      min       lq      mean    median        uq      max neval</span></span>
-<span><span class="co">##       structr 0.677062 0.695477 0.7119222 0.7049245 0.7281375 0.824798   500</span></span>
-<span><span class="co">##      jsonlite 2.290651 2.412458 2.6244086 2.4767530 2.6679495 6.953295   500</span></span>
-<span><span class="co">##         rjson 1.308570 1.340549 1.4379887 1.3633075 1.3907930 5.912314   500</span></span>
-<span><span class="co">##       RJSONIO 3.412302 3.475731 3.5420232 3.4969705 3.5244710 8.321816   500</span></span>
-<span><span class="co">##  RcppSimdJson 0.639252 0.659640 0.6993047 0.6725395 0.7046035 9.117971   500</span></span></code></pre>
+<span><span class="co">##          expr      min       lq      mean    median        uq       max neval</span></span>
+<span><span class="co">##       structr 0.676182 0.693684 0.7151492 0.7048600 0.7302270  1.157098   500</span></span>
+<span><span class="co">##      jsonlite 2.233497 2.378787 2.5688675 2.4585105 2.6023795 12.069793   500</span></span>
+<span><span class="co">##         rjson 1.336533 1.361044 1.4736492 1.3825140 1.4172790  6.453237   500</span></span>
+<span><span class="co">##       RJSONIO 3.489528 3.537819 3.6724960 3.5605710 3.5911285  8.497150   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.643150 0.664184 0.6885262 0.6789315 0.7084065  1.222230   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_large_array_str-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -378,11 +378,11 @@ speed.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: microseconds</span></span>
 <span><span class="co">##          expr    min      lq      mean  median      uq       max neval</span></span>
-<span><span class="co">##       structr 12.423 15.7295  17.96122 17.8430 19.2010    46.707  1000</span></span>
-<span><span class="co">##      jsonlite 16.381 20.1880  23.25646 23.0230 24.5660    72.986  1000</span></span>
-<span><span class="co">##         rjson 28.813 35.8415  41.50652 40.7060 43.4960   115.486  1000</span></span>
-<span><span class="co">##       RJSONIO 37.069 45.2945 136.21307 49.5925 52.8340 85317.526  1000</span></span>
-<span><span class="co">##  RcppSimdJson 23.555 28.5130  32.85223 32.2505 34.4545    78.587  1000</span></span></code></pre>
+<span><span class="co">##       structr 12.824 15.7545  17.97761 17.8985 19.1160    50.975  1000</span></span>
+<span><span class="co">##      jsonlite 16.831 19.5820  22.23774 22.4165 23.8750    78.556  1000</span></span>
+<span><span class="co">##         rjson 29.786 35.0055  39.54896 39.8340 42.3190   118.672  1000</span></span>
+<span><span class="co">##       RJSONIO 37.189 44.3875 136.73761 48.0495 50.9045 88209.502  1000</span></span>
+<span><span class="co">##  RcppSimdJson 23.343 27.7215  31.48806 31.6690 33.7030    77.474  1000</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_deep_nest-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
@@ -405,11 +405,11 @@ speed.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Unit: milliseconds</span></span>
 <span><span class="co">##          expr      min        lq       mean    median        uq      max neval</span></span>
-<span><span class="co">##       structr 0.058189 0.0671550 0.07134398 0.0708920 0.0737080 0.117599   500</span></span>
-<span><span class="co">##      jsonlite 0.039213 0.0490120 0.05298353 0.0527790 0.0556085 0.103663   500</span></span>
-<span><span class="co">##         rjson 0.063178 0.0720940 0.08740031 0.0776250 0.0820630 4.735289   500</span></span>
-<span><span class="co">##       RJSONIO 0.079338 0.0894765 0.09700844 0.0962500 0.1019650 0.171229   500</span></span>
-<span><span class="co">##  RcppSimdJson 0.033293 0.0410720 0.04667174 0.0464265 0.0506945 0.101420   500</span></span></code></pre>
+<span><span class="co">##       structr 0.057447 0.0674160 0.07238841 0.0715485 0.0747490 0.125975   500</span></span>
+<span><span class="co">##      jsonlite 0.039704 0.0488615 0.05292517 0.0526685 0.0554635 0.115024   500</span></span>
+<span><span class="co">##         rjson 0.062276 0.0711080 0.08825464 0.0776550 0.0817430 5.166678   500</span></span>
+<span><span class="co">##       RJSONIO 0.080410 0.0887505 0.09661869 0.0950275 0.1004920 0.196005   500</span></span>
+<span><span class="co">##  RcppSimdJson 0.032621 0.0403300 0.04650406 0.0460960 0.0505090 0.105847   500</span></span></code></pre>
 <p><img src="bench_files/figure-html/bm_wide_object-1.png" width="700" style="display: block; margin: auto;"></p>
 </div>
 </div>

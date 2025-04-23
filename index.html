@@ -102,21 +102,7 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install 'remotes' if needed</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Installing package into '/tmp/RtmpbVVsxu/temp_libpath76b9a7e042934'</span></span>
-<span><span class="co">#&gt; (as 'lib' is unspecified)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ixpantia/structr"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Downloading GitHub repo ixpantia/structr@HEAD</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── R CMD build ─────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; * checking for file ‘/tmp/RtmpBHXbXI/remotes76ffe3b33d728/ixpantia-structr-cfe71fb/DESCRIPTION’ ... OK</span></span>
-<span><span class="co">#&gt; * preparing ‘structr’:</span></span>
-<span><span class="co">#&gt; * checking DESCRIPTION meta-information ... OK</span></span>
-<span><span class="co">#&gt; * cleaning src</span></span>
-<span><span class="co">#&gt; * checking for LF line-endings in source and make files and shell scripts</span></span>
-<span><span class="co">#&gt; * checking for empty or unneeded directories</span></span>
-<span><span class="co">#&gt; * building ‘structr_0.1.0.9000.tar.gz’</span></span>
-<span><span class="co">#&gt; Installing package into '/tmp/RtmpbVVsxu/temp_libpath76b9a7e042934'</span></span>
-<span><span class="co">#&gt; (as 'lib' is unspecified)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ixpantia/structr"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -159,8 +145,8 @@
 <span><span class="fu"><a href="reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_data</span>, <span class="va">compiled</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "y": 99.9,</span></span>
-<span><span class="co">#&gt;   "x": 1,</span></span>
-<span><span class="co">#&gt;   "z": "value"</span></span>
+<span><span class="co">#&gt;   "z": "value",</span></span>
+<span><span class="co">#&gt;   "x": 1</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
 </div>
@@ -223,21 +209,21 @@
 <span></span>
 <span><span class="fu"><a href="reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">parsed</span>, <span class="va">compiled_order</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
-<span><span class="co">#&gt;   "shipping_address": {</span></span>
-<span><span class="co">#&gt;     "country": "USA",</span></span>
-<span><span class="co">#&gt;     "street": "1 Main",</span></span>
-<span><span class="co">#&gt;     "city": "City",</span></span>
-<span><span class="co">#&gt;     "zip_code": "00000"</span></span>
-<span><span class="co">#&gt;   },</span></span>
-<span><span class="co">#&gt;   "order_id": "ORD-1",</span></span>
 <span><span class="co">#&gt;   "customer": {</span></span>
 <span><span class="co">#&gt;     "email": null,</span></span>
-<span><span class="co">#&gt;     "name": "Alice",</span></span>
-<span><span class="co">#&gt;     "customer_id": 1</span></span>
+<span><span class="co">#&gt;     "customer_id": 1,</span></span>
+<span><span class="co">#&gt;     "name": "Alice"</span></span>
 <span><span class="co">#&gt;   },</span></span>
-<span><span class="co">#&gt;   "order_date": "2024-01-01",</span></span>
 <span><span class="co">#&gt;   "items": [],</span></span>
-<span><span class="co">#&gt;   "notes": null</span></span>
+<span><span class="co">#&gt;   "notes": null,</span></span>
+<span><span class="co">#&gt;   "order_id": "ORD-1",</span></span>
+<span><span class="co">#&gt;   "shipping_address": {</span></span>
+<span><span class="co">#&gt;     "zip_code": "00000",</span></span>
+<span><span class="co">#&gt;     "city": "City",</span></span>
+<span><span class="co">#&gt;     "country": "USA",</span></span>
+<span><span class="co">#&gt;     "street": "1 Main"</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "order_date": "2024-01-01"</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -275,15 +261,15 @@
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "eventDate": "20240801",</span></span>
 <span><span class="co">#&gt;   "eventType": "login",</span></span>
+<span><span class="co">#&gt;   "userId": 123,</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-001",</span></span>
 <span><span class="co">#&gt;   "details": {</span></span>
 <span><span class="co">#&gt;     "metadata": {</span></span>
 <span><span class="co">#&gt;       "value": 320.5,</span></span>
 <span><span class="co">#&gt;       "key": "duration"</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     "source": "web"</span></span>
-<span><span class="co">#&gt;   },</span></span>
-<span><span class="co">#&gt;   "eventId": "evt-001",</span></span>
-<span><span class="co">#&gt;   "userId": 123</span></span>
+<span><span class="co">#&gt;   }</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
 <div class="section level2">
