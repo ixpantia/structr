@@ -66,193 +66,610 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ixpantia/structr" class="external-link">structr</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ixpantia/structr" class="external-link">structr</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Registered S3 method overwritten by 'structr':</span></span>
+<span><span class="co">#&gt;   method     from    </span></span>
+<span><span class="co">#&gt;   print.json jsonlite</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>The <code>structr</code> package allows you to parse JSON strings
-while strictly validating them against a predefined schema or structure.
-This ensures that the data conforms to your expectations regarding data
-types (integer, double, string, logical), nesting (objects, arrays),
-required fields, and optional (nullable) values.</p>
-<p>The core validation logic is implemented in Rust for performance,
-leveraging the <code>serde</code> library, and made available in R
-through the <code>{extendr}</code> package.</p>
-<p>This vignette provides a brief overview of the main workflow.</p>
+<p>Have you ever had trouble with data-type consistency when interacting
+with external systems like a web API or a database? It is not uncommon
+for JSON parsers in R to fail to parse and serialize data to the
+specification of the external system.</p>
+<p>For example, let’s say an API requires a field in a JSON object to be
+a single scalar integer value. However, you get constant
+<code>400 Bad Request</code> because packages like <code>jsonlite</code>
+serialize the integer as a vector of length 1. If the API requires a
+nested structure unbox values becomes very impractical.</p>
+<p>The <code>structr</code> package provides a solution to this problem
+by allowing you to define a structure for your data and then serialize
+and deserialize it to and from JSON. (With the added benefit of being
+blazingly fast.)</p>
 </div>
 <div class="section level2">
-<h2 id="basic-workflow">Basic Workflow<a class="anchor" aria-label="anchor" href="#basic-workflow"></a>
+<h2 id="defining-a-structure">Defining a structure<a class="anchor" aria-label="anchor" href="#defining-a-structure"></a>
 </h2>
-<p>Using <code>structr</code> involves three main steps:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Define the Schema:</strong> Use the <code>s_*</code>
-functions (<code>s_map</code>, <code>s_vector</code>,
-<code>s_integer</code>, etc.) to describe the expected JSON structure
-and types. This results in an R list representing the schema.</li>
-<li>
-<strong>Build the Structure:</strong> Pass the schema definition to
-<code><a href="../reference/build_structure.html">build_structure()</a></code>. This function validates your schema
-<em>definition</em> and prepares an optimized internal representation
-for parsing.</li>
-<li>
-<strong>Parse and Validate:</strong> Use <code><a href="../reference/parse_json.html">parse_json()</a></code>
-with the input JSON string and the <em>built structure</em> object. If
-the JSON matches the structure, it returns the parsed R object
-(typically nested lists). If not, it throws a detailed error.</li>
-</ol>
-</div>
-<div class="section level2">
-<h2 id="example-1-simple-object">Example 1: Simple Object<a class="anchor" aria-label="anchor" href="#example-1-simple-object"></a>
-</h2>
-<p>Let’s define a structure for a simple user object and parse matching
-JSON.</p>
+<p>Defining a structure with <code>structr</code> involves combining
+different data-types to build complex structures. These are combined
+through the <code>s_*</code> functions like <code><a href="../reference/s_map.html">?s_map</a></code>,
+<code><a href="../reference/s_vector.html">?s_vector</a></code>, <code><a href="../reference/structure_atomics.html">?s_string</a></code> and others.</p>
+<p>Once the desired structure is reached it has to be compiled using the
+<code><a href="../reference/build_structure.html">?build_structure</a></code> function. The compiled version is what
+will be used to parse or serialize the structures we want.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Define the schema</span></span>
-<span><span class="va">user_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  username <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  is_active <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_logical</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">structure_basic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_structure.html">build_structure</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>    x <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    y <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    z <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 2. Build the structure</span></span>
-<span><span class="va">user_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">user_schema</span><span class="op">)</span></span>
-<span><span class="co"># `user_structure` is now ready for parsing</span></span>
-<span></span>
-<span><span class="co"># 3. Prepare valid JSON</span></span>
-<span><span class="va">valid_json</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "id": 123,</span></span>
-<span><span class="st">  "username": "testuser",</span></span>
-<span><span class="st">  "is_active": true</span></span>
-<span><span class="st">}'</span></span>
-<span></span>
-<span><span class="co"># 4. Parse and validate</span></span>
-<span><span class="va">parsed_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">valid_json</span>, <span class="va">user_structure</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Print the result</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed_data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $id</span></span>
-<span><span class="co">#&gt; [1] 123</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $username</span></span>
-<span><span class="co">#&gt; [1] "testuser"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $is_active</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
-<span></span>
-<span><span class="co"># Check the structure of the parsed data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">parsed_data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 3</span></span>
-<span><span class="co">#&gt;  $ id       : int 123</span></span>
-<span><span class="co">#&gt;  $ username : chr "testuser"</span></span>
-<span><span class="co">#&gt;  $ is_active: logi TRUE</span></span></code></pre></div>
-<p>The output is an R list with the correct types (<code>integer</code>,
-<code>character</code>, <code>logical</code>).</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Map {</span></span>
+<span><span class="co">#&gt;     fields: {</span></span>
+<span><span class="co">#&gt;         "y": Double,</span></span>
+<span><span class="co">#&gt;         "z": Optional(</span></span>
+<span><span class="co">#&gt;             String,</span></span>
+<span><span class="co">#&gt;         ),</span></span>
+<span><span class="co">#&gt;         "x": Integer,</span></span>
+<span><span class="co">#&gt;     },</span></span>
+<span><span class="co">#&gt;     ignore_extra_fields: false,</span></span>
+<span><span class="co">#&gt;     expected_fields_str: [</span></span>
+<span><span class="co">#&gt;         "y",</span></span>
+<span><span class="co">#&gt;         "z",</span></span>
+<span><span class="co">#&gt;         "x",</span></span>
+<span><span class="co">#&gt;     ],</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example-2-nested-structures-and-optional-fields">Example 2: Nested Structures and Optional Fields<a class="anchor" aria-label="anchor" href="#example-2-nested-structures-and-optional-fields"></a>
+<h2 id="parsing-json">Parsing JSON<a class="anchor" aria-label="anchor" href="#parsing-json"></a>
 </h2>
-<p>Structures can be nested, and fields can be marked as optional
-(meaning they can accept <code>null</code>).</p>
+<p>We can use a structure like the one defined above to parse a JSON
+exactly to the specification.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Define a schema with nesting and an optional description</span></span>
-<span><span class="va">product_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
-<span>  product_id <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  details <span class="op">=</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    price <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tags <span class="op">=</span> <span class="fu"><a href="../reference/s_vector.html">s_vector</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  description <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># Can be string or null</span></span>
+<code class="sourceCode R"><span><span class="va">json_str</span> <span class="op">&lt;-</span> <span class="st">'{"x": 1, "y": 99.9, "z": "value"}'</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $x</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $y</span></span>
+<span><span class="co">#&gt; [1] 99.9</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $z</span></span>
+<span><span class="co">#&gt; [1] "value"</span></span></code></pre></div>
+<p>You may have noticed that <code>z</code> is a combination of
+<code><a href="../reference/s_optional.html">?s_optional</a></code> and <code><a href="../reference/structure_atomics.html">?s_string</a></code>. This is because
+<code>structr</code> is non-null by default. Every field is required be
+default, meaning it cannot be <code>NULL</code> or <code>NA</code>.</p>
+<p>If we try parse a JSON without the field <code>x</code> we will get
+an error.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">json_str</span> <span class="op">&lt;-</span> <span class="st">'{"y": 99.9, "z": "value"}'</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in parse_json(json_str, structure_basic) : </span></span>
+<span><span class="co">#&gt;   Serde("missing field `x`") at character 0</span></span>
+<span></span>
+<span><span class="co"># Using 'null' for a non-optional field also causes an error</span></span>
+<span><span class="va">json_str_null</span> <span class="op">&lt;-</span> <span class="st">'{"x": null, "y": 99.9, "z": "value"}'</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str_null</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in parse_json(json_str_null, structure_basic) : </span></span>
+<span><span class="co">#&gt;   ExpectedSigned at character 0</span></span></code></pre></div>
+<p>However, if we try to parse a JSON missing the <em>optional</em>
+field <code>z</code>, it will not fail. <code>s_optional</code> means
+the <em>value</em> associated with the key can be <code>null</code> or
+missing from the JSON object.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">json_str_missing_z</span> <span class="op">&lt;-</span> <span class="st">'{"x": 1, "y": 99.9}'</span></span>
+<span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str_missing_z</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $x</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $y</span></span>
+<span><span class="co">#&gt; [1] 99.9</span></span>
+<span></span>
+<span><span class="va">json_str_null_z</span> <span class="op">&lt;-</span> <span class="st">'{"x": 1, "y": 99.9, "z": null}'</span></span>
+<span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str_null_z</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $x</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $y</span></span>
+<span><span class="co">#&gt; [1] 99.9</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $z</span></span>
+<span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>We will get errors if the types are incorrect. If we pass a string to
+x or y we will get errors.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">json_str_bad_types</span> <span class="op">&lt;-</span> <span class="st">'{"x": "1", "y": "99.9", "z": "value"}'</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_str_bad_types</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in parse_json(json_str_bad_types, structure_basic) : </span></span>
+<span><span class="co">#&gt;   ExpectedSigned at character 0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="serializing-json">Serializing JSON<a class="anchor" aria-label="anchor" href="#serializing-json"></a>
+</h2>
+<p>We can use this same structure to convert R objects into the
+corresponding JSON. <code>serialize_json</code> ensures that the R
+object conforms to the structure <em>before</em> creating the JSON
+string.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">r_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>, y <span class="op">=</span> <span class="fl">99.9</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {"y":99.9,"z":"value","x":1}</span></span>
+<span></span>
+<span><span class="va">r_list_null_z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">2L</span>, y <span class="op">=</span> <span class="fl">100.1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list_null_z</span>, <span class="va">structure_basic</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {"y":100.1,"z":null,"x":2}</span></span></code></pre></div>
+<p>If the R object doesn’t match the structure (e.g., wrong type,
+missing required field), <code>serialize_json</code> will raise an
+error.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Wrong type for 'x'</span></span>
+<span><span class="va">r_list_bad_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"1"</span>, y <span class="op">=</span> <span class="fl">99.9</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list_bad_type</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(r_list_bad_type, structure_basic) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Type mismatch: expected an integer") at character 0</span></span>
+<span></span>
+<span><span class="co"># Missing required field 'y'</span></span>
+<span><span class="va">r_list_missing_field</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list_missing_field</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(r_list_missing_field, structure_basic) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Found NA/null values in non-optional field of type a floating-point number") at character 0</span></span>
+<span></span>
+<span><span class="co"># Providing NA for a non-optional field 'y'</span></span>
+<span><span class="va">r_list_na_field</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1L</span>, y <span class="op">=</span> <span class="cn">NA_real_</span>, z <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">r_list_na_field</span>, <span class="va">structure_basic</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(r_list_na_field, structure_basic) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Found NA/null values in non-optional field of type a floating-point number") at character 0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="more-complex-structures-parsing">More Complex Structures (Parsing)<a class="anchor" aria-label="anchor" href="#more-complex-structures-parsing"></a>
+</h2>
+<p>Real-world JSON, especially from APIs, often involves nested objects,
+arrays of objects, optional fields, and specific data types like dates.
+<code>structr</code> is designed to handle these complexities robustly
+during parsing.</p>
+<p>Let’s imagine we’re interacting with an e-commerce API that returns
+order details. A typical JSON response might look like this:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="dt">"order_id"</span><span class="fu">:</span> <span class="st">"ORD-12345"</span><span class="fu">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="dt">"order_date"</span><span class="fu">:</span> <span class="st">"2024-07-29"</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="dt">"status"</span><span class="fu">:</span> <span class="st">"processing"</span><span class="fu">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="dt">"customer"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    <span class="dt">"customer_id"</span><span class="fu">:</span> <span class="dv">987</span><span class="fu">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>    <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Jane Doe"</span><span class="fu">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>    <span class="dt">"email"</span><span class="fu">:</span> <span class="st">"jane.doe@example.com"</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="dt">"items"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      <span class="dt">"sku"</span><span class="fu">:</span> <span class="st">"ITEM001"</span><span class="fu">,</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>      <span class="dt">"product_name"</span><span class="fu">:</span> <span class="st">"Wireless Mouse"</span><span class="fu">,</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>      <span class="dt">"quantity"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>      <span class="dt">"unit_price"</span><span class="fu">:</span> <span class="fl">25.99</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>    <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>      <span class="dt">"sku"</span><span class="fu">:</span> <span class="st">"ITEM002"</span><span class="fu">,</span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>      <span class="dt">"product_name"</span><span class="fu">:</span> <span class="st">"Keyboard"</span><span class="fu">,</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>      <span class="dt">"quantity"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>      <span class="dt">"unit_price"</span><span class="fu">:</span> <span class="fl">75.50</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>  <span class="dt">"shipping_address"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>    <span class="dt">"street"</span><span class="fu">:</span> <span class="st">"123 Example St"</span><span class="fu">,</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>    <span class="dt">"city"</span><span class="fu">:</span> <span class="st">"Metropolis"</span><span class="fu">,</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>    <span class="dt">"zip_code"</span><span class="fu">:</span> <span class="st">"10001"</span><span class="fu">,</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>    <span class="dt">"country"</span><span class="fu">:</span> <span class="st">"USA"</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>  <span class="dt">"notes"</span><span class="fu">:</span> <span class="st">"Gift wrap requested."</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>We can define a <code>structr</code> schema to strictly match this
+structure:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define the schema for a single order item</span></span>
+<span><span class="va">item_schema_parse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  sku <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  product_name <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  quantity <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  unit_price <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Build the structure</span></span>
-<span><span class="va">product_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">product_schema</span><span class="op">)</span></span>
+<span><span class="co"># Define the schema for the customer</span></span>
+<span><span class="va">customer_schema_parse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  customer_id <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  email <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># Email might be null</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3. Parse JSON with the optional field present</span></span>
-<span><span class="va">json_with_desc</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "product_id": "XYZ-123",</span></span>
-<span><span class="st">  "details": {"name": "Gadget", "price": 19.99},</span></span>
-<span><span class="st">  "tags": ["tech", "new"],</span></span>
-<span><span class="st">  "description": "A useful gadget"</span></span>
-<span><span class="st">}'</span></span>
-<span><span class="va">parsed1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_with_desc</span>, <span class="va">product_structure</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Description when present:\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Description when present:</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed1</span><span class="op">$</span><span class="va">description</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "A useful gadget"</span></span>
+<span><span class="co"># Define the schema for the shipping address</span></span>
+<span><span class="va">address_schema_parse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  street <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  city <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  zip_code <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  country <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 4. Parse JSON where the optional field is null</span></span>
-<span><span class="va">json_null_desc</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "product_id": "ABC-789",</span></span>
-<span><span class="st">  "details": {"name": "Widget", "price": 9.50},</span></span>
-<span><span class="st">  "tags": [],</span></span>
-<span><span class="st">  "description": null</span></span>
+<span><span class="co"># Combine into the main order schema</span></span>
+<span><span class="va">order_schema_parse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  order_id <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  order_date <span class="op">=</span> <span class="fu"><a href="../reference/s_date.html">s_date</a></span><span class="op">(</span>format <span class="op">=</span> <span class="st">"%Y-%m-%d"</span><span class="op">)</span>, <span class="co"># Expecting specific date format</span></span>
+<span>  status <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  customer <span class="op">=</span> <span class="va">customer_schema_parse</span>,              <span class="co"># Nest the customer schema</span></span>
+<span>  items <span class="op">=</span> <span class="fu"><a href="../reference/s_vector.html">s_vector</a></span><span class="op">(</span><span class="va">item_schema_parse</span><span class="op">)</span>,           <span class="co"># Expect a vector of items matching item_schema</span></span>
+<span>  shipping_address <span class="op">=</span> <span class="va">address_schema_parse</span>,       <span class="co"># Nest the address schema</span></span>
+<span>  notes <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>           <span class="co"># Notes might be null</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Build the final structure</span></span>
+<span><span class="va">compiled_order_structure_parse</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">order_schema_parse</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Print the structure (optional, for inspection)</span></span>
+<span><span class="co"># print(compiled_order_structure_parse)</span></span></code></pre></div>
+<p>Now, let’s define the JSON string in R and parse it using our
+compiled structure.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">json_order_1</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
+<span><span class="st">  "order_id": "ORD-12345",</span></span>
+<span><span class="st">  "order_date": "2024-07-29",</span></span>
+<span><span class="st">  "status": "processing",</span></span>
+<span><span class="st">  "customer": {</span></span>
+<span><span class="st">    "customer_id": 987,</span></span>
+<span><span class="st">    "name": "Jane Doe",</span></span>
+<span><span class="st">    "email": "jane.doe@example.com"</span></span>
+<span><span class="st">  },</span></span>
+<span><span class="st">  "items": [</span></span>
+<span><span class="st">    {</span></span>
+<span><span class="st">      "sku": "ITEM001",</span></span>
+<span><span class="st">      "product_name": "Wireless Mouse",</span></span>
+<span><span class="st">      "quantity": 1,</span></span>
+<span><span class="st">      "unit_price": 25.99</span></span>
+<span><span class="st">    },</span></span>
+<span><span class="st">    {</span></span>
+<span><span class="st">      "sku": "ITEM002",</span></span>
+<span><span class="st">      "product_name": "Keyboard",</span></span>
+<span><span class="st">      "quantity": 1,</span></span>
+<span><span class="st">      "unit_price": 75.50</span></span>
+<span><span class="st">    }</span></span>
+<span><span class="st">  ],</span></span>
+<span><span class="st">  "shipping_address": {</span></span>
+<span><span class="st">    "street": "123 Example St",</span></span>
+<span><span class="st">    "city": "Metropolis",</span></span>
+<span><span class="st">    "zip_code": "10001",</span></span>
+<span><span class="st">    "country": "USA"</span></span>
+<span><span class="st">  },</span></span>
+<span><span class="st">  "notes": "Gift wrap requested."</span></span>
 <span><span class="st">}'</span></span>
-<span><span class="va">parsed2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_null_desc</span>, <span class="va">product_structure</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nDescription when null:\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Description when null:</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">parsed2</span><span class="op">$</span><span class="va">description</span><span class="op">)</span></span>
-<span><span class="co">#&gt; NULL</span></span></code></pre></div>
-<p>Note that <code><a href="../reference/s_optional.html">s_optional()</a></code> means the <em>value</em> can be
-<code>null</code>. By default, for <code>s_map</code>, the <em>key</em>
-itself must still be present in the JSON, even if its value is
-<code>null</code>. If the key is entirely missing,
-<code>parse_json</code> will usually throw a “missing field” error.</p>
+<span></span>
+<span><span class="co"># Parse the JSON string</span></span>
+<span><span class="va">parsed_order_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_order_1</span>, <span class="va">compiled_order_structure_parse</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Inspect the parsed R object structure and types</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">parsed_order_1</span>, max.level <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 7</span></span>
+<span><span class="co">#&gt;  $ order_id        : chr "ORD-12345"</span></span>
+<span><span class="co">#&gt;  $ order_date      : Date[1:1], format: "2024-07-29"</span></span>
+<span><span class="co">#&gt;  $ status          : chr "processing"</span></span>
+<span><span class="co">#&gt;  $ customer        :List of 3</span></span>
+<span><span class="co">#&gt;   ..$ customer_id: int 987</span></span>
+<span><span class="co">#&gt;   ..$ name       : chr "Jane Doe"</span></span>
+<span><span class="co">#&gt;   ..$ email      : chr "jane.doe@example.com"</span></span>
+<span><span class="co">#&gt;  $ items           :List of 2</span></span>
+<span><span class="co">#&gt;   ..$ :List of 4</span></span>
+<span><span class="co">#&gt;   ..$ :List of 4</span></span>
+<span><span class="co">#&gt;  $ shipping_address:List of 4</span></span>
+<span><span class="co">#&gt;   ..$ street  : chr "123 Example St"</span></span>
+<span><span class="co">#&gt;   ..$ city    : chr "Metropolis"</span></span>
+<span><span class="co">#&gt;   ..$ zip_code: chr "10001"</span></span>
+<span><span class="co">#&gt;   ..$ country : chr "USA"</span></span>
+<span><span class="co">#&gt;  $ notes           : chr "Gift wrap requested."</span></span>
+<span></span>
+<span><span class="co"># Access specific parts</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Order Status:"</span>, <span class="va">parsed_order_1</span><span class="op">$</span><span class="va">status</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Order Status: processing"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Number of items:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">parsed_order_1</span><span class="op">$</span><span class="va">items</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Number of items: 2"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"First item SKU:"</span>, <span class="va">parsed_order_1</span><span class="op">$</span><span class="va">items</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">sku</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "First item SKU: ITEM001"</span></span>
+<span><span class="co"># Notice the order_date is now an R Date object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Order Date:"</span>, <span class="va">parsed_order_1</span><span class="op">$</span><span class="va">order_date</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Order Date: 2024-07-29"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">parsed_order_1</span><span class="op">$</span><span class="va">order_date</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Date"</span></span></code></pre></div>
+<p>Let’s try another example where the optional fields
+(<code>email</code> and <code>notes</code>) are <code>null</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">json_order_2</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
+<span><span class="st">  "order_id": "ORD-67890",</span></span>
+<span><span class="st">  "order_date": "2024-07-30",</span></span>
+<span><span class="st">  "status": "shipped",</span></span>
+<span><span class="st">  "customer": {</span></span>
+<span><span class="st">    "customer_id": 654,</span></span>
+<span><span class="st">    "name": "John Smith",</span></span>
+<span><span class="st">    "email": null</span></span>
+<span><span class="st">  },</span></span>
+<span><span class="st">  "items": [</span></span>
+<span><span class="st">    {</span></span>
+<span><span class="st">      "sku": "ITEM003",</span></span>
+<span><span class="st">      "product_name": "USB Hub",</span></span>
+<span><span class="st">      "quantity": 2,</span></span>
+<span><span class="st">      "unit_price": 12.00</span></span>
+<span><span class="st">    }</span></span>
+<span><span class="st">  ],</span></span>
+<span><span class="st">  "shipping_address": {</span></span>
+<span><span class="st">    "street": "456 Test Ave",</span></span>
+<span><span class="st">    "city": "Gotham",</span></span>
+<span><span class="st">    "zip_code": "20002",</span></span>
+<span><span class="st">    "country": "USA"</span></span>
+<span><span class="st">  },</span></span>
+<span><span class="st">  "notes": null</span></span>
+<span><span class="st">}'</span></span>
+<span></span>
+<span><span class="co"># Parse the second JSON</span></span>
+<span><span class="va">parsed_order_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_order_2</span>, <span class="va">compiled_order_structure_parse</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check the optional fields (which are NULL in R)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Customer Email:"</span>, <span class="va">parsed_order_2</span><span class="op">$</span><span class="va">customer</span><span class="op">$</span><span class="va">email</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Customer Email: "</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">parsed_order_2</span><span class="op">$</span><span class="va">customer</span><span class="op">$</span><span class="va">email</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Order Notes:"</span>, <span class="va">parsed_order_2</span><span class="op">$</span><span class="va">notes</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Order Notes: "</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">parsed_order_2</span><span class="op">$</span><span class="va">notes</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>If the incoming JSON deviates from this structure (e.g., wrong type
+for <code>quantity</code>, missing <code>status</code>, unexpected extra
+field, incorrect date format), <code>parse_json</code> will raise a
+specific error, ensuring data integrity when working with external
+systems.</p>
+<p>This example demonstrates how <code>s_map</code>,
+<code>s_vector</code>, <code>s_optional</code>, <code>s_date</code>, and
+atomic types (<code>s_string</code>, <code>s_integer</code>,
+<code>s_double</code>) can be combined to model and validate complex,
+real-world JSON data during parsing.</p>
 </div>
 <div class="section level2">
-<h2 id="handling-errors">Handling Errors<a class="anchor" aria-label="anchor" href="#handling-errors"></a>
+<h2 id="more-complex-structures-serialization">More Complex Structures (Serialization)<a class="anchor" aria-label="anchor" href="#more-complex-structures-serialization"></a>
 </h2>
-<p>If the JSON doesn’t match the structure, <code><a href="../reference/parse_json.html">parse_json()</a></code>
-throws an informative error.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use the simple user_structure from Example 1</span></span>
-<span></span>
-<span><span class="co"># Error: Type mismatch (id should be integer, not string)</span></span>
-<span><span class="va">json_type_error</span> <span class="op">&lt;-</span> <span class="st">'{ "id": "123", "username": "badtype", "is_active": true }'</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_type_error</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in parse_json(json_type_error, user_structure) : </span></span>
-<span><span class="co">#&gt;   ExpectedSigned at character 0</span></span>
-<span></span>
-<span></span>
-<span><span class="co"># Error: Missing required field (username is missing)</span></span>
-<span><span class="va">json_missing_field</span> <span class="op">&lt;-</span> <span class="st">'{ "id": 456, "is_active": false }'</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_missing_field</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in parse_json(json_missing_field, user_structure) : </span></span>
-<span><span class="co">#&gt;   Serde("missing field `username`") at character 0</span></span>
-<span></span>
-<span></span>
-<span><span class="co"># Error: Extra field (email is not defined in the schema)</span></span>
-<span><span class="va">json_extra_field</span> <span class="op">&lt;-</span> <span class="st">'{</span></span>
-<span><span class="st">  "id": 789, "username": "extra", "is_active": true, "email": "a@b.com"</span></span>
-<span><span class="st">}'</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_extra_field</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in parse_json(json_extra_field, user_structure) : </span></span>
-<span><span class="co">#&gt;   Serde("unknown field `email`, expected one of `username`, `is_active`, `id`") at character 0</span></span>
-<span></span>
-<span><span class="co"># Error: Invalid JSON syntax</span></span>
-<span><span class="va">json_syntax_error</span> <span class="op">&lt;-</span> <span class="st">'{ "id": 1 '</span> <span class="co"># Missing closing brace</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/parse_json.html">parse_json</a></span><span class="op">(</span><span class="va">json_syntax_error</span>, <span class="va">user_structure</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in parse_json(json_syntax_error, user_structure) : </span></span>
-<span><span class="co">#&gt;   Syntax at character 8 ('1')</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
-</h2>
-<p>This vignette covered the basic usage of <code>structr</code>. For
-more details on specific functions and validation rules, consult the
-help pages:</p>
+<p>Just as <code>structr</code> helps enforce structure when parsing
+JSON, it’s equally valuable when <em>creating</em> JSON to send to
+external systems, especially those with strict API requirements. This
+ensures your R data is correctly formatted before transmission.</p>
+<p>Let’s imagine we need to send event log data to an API. This API is
+very particular about the format:</p>
 <ul>
-<li><code><a href="../reference/parse_json.html">?parse_json</a></code></li>
-<li><code><a href="../reference/build_structure.html">?build_structure</a></code></li>
+<li>It expects specific fields: <code>eventId</code>,
+<code>eventDate</code>, <code>eventType</code>, <code>userId</code>,
+<code>details</code>.</li>
 <li>
-<code><a href="../reference/s_map.html">?s_map</a></code>, <code><a href="../reference/s_vector.html">?s_vector</a></code>,
-<code><a href="../reference/structure_atomics.html">?s_integer</a></code>, <code><a href="../reference/structure_atomics.html">?s_double</a></code>, <code><a href="../reference/structure_atomics.html">?s_string</a></code>,
-<code><a href="../reference/structure_atomics.html">?s_logical</a></code>, <code><a href="../reference/s_optional.html">?s_optional</a></code>,
-<code><a href="../reference/s_date.html">?s_date</a></code>
-</li>
+<code>eventDate</code> <em>must</em> be in <code>YYYYMMDD</code>
+format.</li>
+<li>
+<code>userId</code> <em>must</em> be an integer.</li>
+<li>
+<code>details</code> is a nested object containing
+<code>source</code> (string) and <code>metadata</code> (optional
+map).</li>
+<li>
+<code>metadata</code> itself can contain <code>key</code> (string)
+and <code>value</code> (double), both optional within the metadata map,
+but if <code>metadata</code> is present, it must be an object.</li>
 </ul>
+<p>We can define a <code>structr</code> schema to meet these strict
+requirements for serialization:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Schema for the optional metadata map</span></span>
+<span><span class="va">metadata_schema_serialize</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  key <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  value <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="fu"><a href="../reference/structure_atomics.html">s_double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Schema for the details object</span></span>
+<span><span class="va">details_schema_serialize</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  source <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="fu"><a href="../reference/s_optional.html">s_optional</a></span><span class="op">(</span><span class="va">metadata_schema_serialize</span><span class="op">)</span> <span class="co"># The whole metadata map is optional</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Main schema for the log entry</span></span>
+<span><span class="va">log_entry_schema_serialize</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/s_map.html">s_map</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="../reference/s_date.html">s_date</a></span><span class="op">(</span>format <span class="op">=</span> <span class="st">"%Y%m%d"</span><span class="op">)</span>, <span class="co"># Strict date format required by API</span></span>
+<span>  eventType <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_string</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fu"><a href="../reference/structure_atomics.html">s_integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  details <span class="op">=</span> <span class="va">details_schema_serialize</span>      <span class="co"># Nest the details schema</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Build the final structure for serialization</span></span>
+<span><span class="va">compiled_log_entry_structure_serialize</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_structure.html">build_structure</a></span><span class="op">(</span><span class="va">log_entry_schema_serialize</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">compiled_log_entry_structure_serialize</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Map {</span></span>
+<span><span class="co">#&gt;     fields: {</span></span>
+<span><span class="co">#&gt;         "eventType": String,</span></span>
+<span><span class="co">#&gt;         "userId": Integer,</span></span>
+<span><span class="co">#&gt;         "details": Map {</span></span>
+<span><span class="co">#&gt;             fields: {</span></span>
+<span><span class="co">#&gt;                 "source": String,</span></span>
+<span><span class="co">#&gt;                 "metadata": Optional(</span></span>
+<span><span class="co">#&gt;                     Map {</span></span>
+<span><span class="co">#&gt;                         fields: {</span></span>
+<span><span class="co">#&gt;                             "value": Optional(</span></span>
+<span><span class="co">#&gt;                                 Double,</span></span>
+<span><span class="co">#&gt;                             ),</span></span>
+<span><span class="co">#&gt;                             "key": Optional(</span></span>
+<span><span class="co">#&gt;                                 String,</span></span>
+<span><span class="co">#&gt;                             ),</span></span>
+<span><span class="co">#&gt;                         },</span></span>
+<span><span class="co">#&gt;                         ignore_extra_fields: false,</span></span>
+<span><span class="co">#&gt;                         expected_fields_str: [</span></span>
+<span><span class="co">#&gt;                             "value",</span></span>
+<span><span class="co">#&gt;                             "key",</span></span>
+<span><span class="co">#&gt;                         ],</span></span>
+<span><span class="co">#&gt;                     },</span></span>
+<span><span class="co">#&gt;                 ),</span></span>
+<span><span class="co">#&gt;             },</span></span>
+<span><span class="co">#&gt;             ignore_extra_fields: false,</span></span>
+<span><span class="co">#&gt;             expected_fields_str: [</span></span>
+<span><span class="co">#&gt;                 "source",</span></span>
+<span><span class="co">#&gt;                 "metadata",</span></span>
+<span><span class="co">#&gt;             ],</span></span>
+<span><span class="co">#&gt;         },</span></span>
+<span><span class="co">#&gt;         "eventId": String,</span></span>
+<span><span class="co">#&gt;         "eventDate": Date {</span></span>
+<span><span class="co">#&gt;             format: "%Y%m%d",</span></span>
+<span><span class="co">#&gt;         },</span></span>
+<span><span class="co">#&gt;     },</span></span>
+<span><span class="co">#&gt;     ignore_extra_fields: false,</span></span>
+<span><span class="co">#&gt;     expected_fields_str: [</span></span>
+<span><span class="co">#&gt;         "eventType",</span></span>
+<span><span class="co">#&gt;         "userId",</span></span>
+<span><span class="co">#&gt;         "details",</span></span>
+<span><span class="co">#&gt;         "eventId",</span></span>
+<span><span class="co">#&gt;         "eventDate",</span></span>
+<span><span class="co">#&gt;     ],</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
+<p>Now, let’s create some R data that we want to send to this API. It’s
+crucial that the R data types match the schema (e.g., use
+<code><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date()</a></code> for <code>eventDate</code>, <code>integer</code>
+for <code>userId</code>).</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example 1: Log entry with full details including metadata</span></span>
+<span><span class="va">log_entry_data_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="st">"evt-aaa-001"</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-08-15"</span><span class="op">)</span>,</span>
+<span>  eventType <span class="op">=</span> <span class="st">"user_login"</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fl">12345L</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="st">"web_frontend"</span>,</span>
+<span>    metadata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      key <span class="op">=</span> <span class="st">"session_duration"</span>,</span>
+<span>      value <span class="op">=</span> <span class="fl">350.5</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 2: Log entry where metadata is missing</span></span>
+<span><span class="va">log_entry_data_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="st">"evt-bbb-002"</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-08-16"</span><span class="op">)</span>,</span>
+<span>  eventType <span class="op">=</span> <span class="st">"page_view"</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fl">98765L</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="st">"mobile_app"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example 3: Log entry where metadata is present, but its inner fields are NULL</span></span>
+<span><span class="va">log_entry_data_3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  eventId <span class="op">=</span> <span class="st">"evt-ccc-003"</span>,</span>
+<span>  eventDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-08-17"</span><span class="op">)</span>,</span>
+<span>  eventType <span class="op">=</span> <span class="st">"item_click"</span>,</span>
+<span>  userId <span class="op">=</span> <span class="fl">12345L</span>,</span>
+<span>  details <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="st">"web_frontend"</span>,</span>
+<span>    metadata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      key <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>      value <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">log_entry_data_1</span><span class="op">)</span> <span class="co"># Check R types</span></span>
+<span><span class="co">#&gt; List of 5</span></span>
+<span><span class="co">#&gt;  $ eventId  : chr "evt-aaa-001"</span></span>
+<span><span class="co">#&gt;  $ eventDate: Date[1:1], format: "2024-08-15"</span></span>
+<span><span class="co">#&gt;  $ eventType: chr "user_login"</span></span>
+<span><span class="co">#&gt;  $ userId   : int 12345</span></span>
+<span><span class="co">#&gt;  $ details  :List of 2</span></span>
+<span><span class="co">#&gt;   ..$ source  : chr "web_frontend"</span></span>
+<span><span class="co">#&gt;   ..$ metadata:List of 2</span></span>
+<span><span class="co">#&gt;   .. ..$ key  : chr "session_duration"</span></span>
+<span><span class="co">#&gt;   .. ..$ value: num 350</span></span></code></pre></div>
+<p>Let’s serialize these R lists using our strict structure.
+<code>serialize_json</code> will validate the R list against the schema
+before producing the JSON.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Serialize Example 1</span></span>
+<span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_1</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "eventType": "user_login",</span></span>
+<span><span class="co">#&gt;   "userId": 12345,</span></span>
+<span><span class="co">#&gt;   "details": {</span></span>
+<span><span class="co">#&gt;     "source": "web_frontend",</span></span>
+<span><span class="co">#&gt;     "metadata": {</span></span>
+<span><span class="co">#&gt;       "value": 350.5,</span></span>
+<span><span class="co">#&gt;       "key": "session_duration"</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-aaa-001",</span></span>
+<span><span class="co">#&gt;   "eventDate": "20240815"</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span></span>
+<span><span class="co"># Serialize Example 2</span></span>
+<span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_2</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "eventType": "page_view",</span></span>
+<span><span class="co">#&gt;   "userId": 98765,</span></span>
+<span><span class="co">#&gt;   "details": {</span></span>
+<span><span class="co">#&gt;     "source": "mobile_app",</span></span>
+<span><span class="co">#&gt;     "metadata": null</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-bbb-002",</span></span>
+<span><span class="co">#&gt;   "eventDate": "20240816"</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span></span>
+<span><span class="co"># Serialize Example 3</span></span>
+<span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">log_entry_data_3</span>, <span class="va">compiled_log_entry_structure_serialize</span>, pretty <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; {</span></span>
+<span><span class="co">#&gt;   "eventType": "item_click",</span></span>
+<span><span class="co">#&gt;   "userId": 12345,</span></span>
+<span><span class="co">#&gt;   "details": {</span></span>
+<span><span class="co">#&gt;     "source": "web_frontend",</span></span>
+<span><span class="co">#&gt;     "metadata": {</span></span>
+<span><span class="co">#&gt;       "value": null,</span></span>
+<span><span class="co">#&gt;       "key": null</span></span>
+<span><span class="co">#&gt;     }</span></span>
+<span><span class="co">#&gt;   },</span></span>
+<span><span class="co">#&gt;   "eventId": "evt-ccc-003",</span></span>
+<span><span class="co">#&gt;   "eventDate": "20240817"</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
+<p>Now, let’s see what happens if our R data <em>doesn’t</em> conform to
+the structure expected by the API schema.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Error Case 1: Incorrect date type (character instead of Date)</span></span>
+<span><span class="va">bad_data_date_type</span> <span class="op">&lt;-</span> <span class="va">log_entry_data_1</span></span>
+<span><span class="va">bad_data_date_type</span><span class="op">$</span><span class="va">eventDate</span> <span class="op">&lt;-</span> <span class="st">"2024-08-15"</span> <span class="co"># Should be as.Date("2024-08-15")</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">bad_data_date_type</span>, <span class="va">compiled_log_entry_structure_serialize</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(bad_data_date_type, compiled_log_entry_structure_serialize) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Type mismatch: expected a date") at character 0</span></span>
+<span></span>
+<span><span class="co"># Error Case 2: Incorrect type for userId (numeric instead of integer)</span></span>
+<span><span class="va">bad_data_user_type</span> <span class="op">&lt;-</span> <span class="va">log_entry_data_1</span></span>
+<span><span class="va">bad_data_user_type</span><span class="op">$</span><span class="va">userId</span> <span class="op">&lt;-</span> <span class="fl">12345.0</span> <span class="co"># Should be 12345L</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">bad_data_user_type</span>, <span class="va">compiled_log_entry_structure_serialize</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(bad_data_user_type, compiled_log_entry_structure_serialize) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Type mismatch: expected an integer") at character 0</span></span>
+<span></span>
+<span><span class="co"># Error Case 3: Missing a required field ('eventType') in the R list</span></span>
+<span><span class="va">bad_data_missing_field</span> <span class="op">&lt;-</span> <span class="va">log_entry_data_1</span></span>
+<span><span class="va">bad_data_missing_field</span><span class="op">$</span><span class="va">eventType</span> <span class="op">&lt;-</span> <span class="cn">NULL</span> <span class="co"># Remove the field</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">bad_data_missing_field</span>, <span class="va">compiled_log_entry_structure_serialize</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(bad_data_missing_field, compiled_log_entry_structure_serialize) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Found NA/null values in non-optional field of type a string") at character 0</span></span>
+<span></span>
+<span><span class="co"># Error Case 4: Providing NA for a required, non-optional field ('source')</span></span>
+<span><span class="va">bad_data_na_field</span> <span class="op">&lt;-</span> <span class="va">log_entry_data_1</span></span>
+<span><span class="va">bad_data_na_field</span><span class="op">$</span><span class="va">details</span><span class="op">$</span><span class="va">source</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/serialize_json.html">serialize_json</a></span><span class="op">(</span><span class="va">bad_data_na_field</span>, <span class="va">compiled_log_entry_structure_serialize</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in serialize_json(bad_data_na_field, compiled_log_entry_structure_serialize) : </span></span>
+<span><span class="co">#&gt;   Failed to serialize structure: Serde("Found NA/null values in non-optional field of type a string") at character 0</span></span></code></pre></div>
+<p>These examples show how <code>serialize_json</code> uses the
+<code>structr</code> schema to enforce type correctness and structure
+<em>before</em> generating the JSON. This is critical for reliable
+communication with APIs that demand specific formats, preventing
+malformed requests and runtime errors on the server side. The use of
+<code>s_date</code> with a specific <code>format</code> ensures dates
+are serialized exactly as required.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
